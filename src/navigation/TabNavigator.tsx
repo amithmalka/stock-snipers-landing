@@ -1,77 +1,80 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Feather } from '@expo/vector-icons';
 import { RootTabParamList } from './types';
-import { colors, typography } from '../config/theme';
+import { colors } from '../config/theme';
 import { HalachicProfile } from '../types/halachic';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import CalendarScreen from '../screens/Calendar/CalendarScreen';
 import AskExpertScreen from '../screens/AskExpert/AskExpertScreen';
+import MikvehScreen from '../screens/Mikveh/MikvehScreen';
 import ServicesScreen from '../screens/Services/ServicesScreen';
-import CommunityScreen from '../screens/Community/CommunityScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const TAB_ICONS: Record<string, string> = {
-  CalendarTab:  '📅',
-  AskExpertTab: '💬',
-  ServicesTab:  '💅',
-  CommunityTab: '🌸',
-  ProfileTab:   '👤',
-};
+type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
 
-const TAB_LABELS: Record<string, string> = {
-  CalendarTab:  'לוח',
-  AskExpertTab: 'שאלי רב',
-  ServicesTab:  'שירותים',
-  CommunityTab: 'קהילה',
-  ProfileTab:   'פרופיל',
+const TAB_ICONS: Record<string, FeatherIconName> = {
+  CalendarTab:  'calendar',
+  AskExpertTab: 'message-circle',
+  MikvehTab:    'droplet',
+  ServicesTab:  'heart',
+  ProfileTab:   'user',
 };
 
 interface TabNavigatorProps {
   halachicProfile?: HalachicProfile;
-  displayName?: string;
-  email?: string;
   biometricEnabled?: boolean;
-  locationEnabled?: boolean;
-  onSignOut?: () => void;
-  onUpdateProfile?: (updates: {
-    halachicProfile?: HalachicProfile;
-    biometricEnabled?: boolean;
-    locationEnabled?: boolean;
-  }) => void;
 }
 
 export default function TabNavigator({
   halachicProfile = 'sephardi',
-  displayName = '',
-  email = '',
   biometricEnabled = false,
-  locationEnabled = true,
-  onSignOut,
-  onUpdateProfile,
 }: TabNavigatorProps) {
+  const { t } = useLanguage();
+
+  const TAB_LABELS: Record<string, string> = {
+    CalendarTab:  t.tabCalendar,
+    AskExpertTab: t.tabAskExpert,
+    MikvehTab:    t.tabMikveh,
+    ServicesTab:  t.tabServices,
+    ProfileTab:   t.tabProfile,
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        lazy: true,
         headerShown: false,
-        tabBarActiveTintColor: colors.primary.gold,
-        tabBarInactiveTintColor: colors.neutral.textMuted,
+        tabBarActiveTintColor: colors.primary.rose,
+        tabBarInactiveTintColor: '#B0A8A0',
         tabBarStyle: {
-          backgroundColor: colors.neutral.white,
-          borderTopColor: colors.neutral.beigeDeep,
-          borderTopWidth: 0.5,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#EDE8E3',
+          height: 80,
           paddingTop: 8,
-          height: 88,
+          paddingBottom: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: -3 },
+          elevation: 8,
         },
         tabBarLabelStyle: {
-          fontSize: typography.size.xs,
+          fontSize: 10,
           fontWeight: '600',
+          marginTop: 2,
         },
         tabBarLabel: TAB_LABELS[route.name] ?? route.name,
-        tabBarIcon: () => (
-          <Text style={{ fontSize: 22 }}>{TAB_ICONS[route.name]}</Text>
+        tabBarIcon: ({ color, focused }) => (
+          <Feather
+            name={TAB_ICONS[route.name]}
+            size={focused ? 22 : 20}
+            color={color}
+          />
         ),
       })}
     >
@@ -88,23 +91,13 @@ export default function TabNavigator({
         {() => <AskExpertScreen halachicProfile={halachicProfile} />}
       </Tab.Screen>
 
+      <Tab.Screen name="MikvehTab">
+        {() => <MikvehScreen halachicProfile={halachicProfile} />}
+      </Tab.Screen>
+
       <Tab.Screen name="ServicesTab" component={ServicesScreen} />
 
-      <Tab.Screen name="CommunityTab" component={CommunityScreen} />
-
-      <Tab.Screen name="ProfileTab">
-        {() => (
-          <ProfileScreen
-            displayName={displayName}
-            email={email}
-            halachicProfile={halachicProfile}
-            biometricEnabled={biometricEnabled}
-            locationEnabled={locationEnabled}
-            onUpdateProfile={onUpdateProfile}
-            onSignOut={onSignOut}
-          />
-        )}
-      </Tab.Screen>
+      <Tab.Screen name="ProfileTab" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
