@@ -1,8 +1,8 @@
 export type RootTabParamList = {
   CalendarTab: undefined;
   AskExpertTab: undefined;
+  MikvehTab: undefined;
   ServicesTab: undefined;
-  CommunityTab: undefined;
   ProfileTab: undefined;
 };
 
