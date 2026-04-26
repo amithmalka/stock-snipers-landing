@@ -1,161 +1,243 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
-import { Rabbi } from '../../types/models';
 import { HalachicProfile } from '../../types/halachic';
 import ChatScreen from './ChatScreen';
-
-const DEMO_RABBIS: Rabbi[] = [
-  { id: 'r1', name: 'הרב משה כהן', specialty: 'sephardi', isAvailable: true },
-  { id: 'r2', name: 'הרבנית שרה לוי', specialty: 'sephardi', isAvailable: true },
-  { id: 'r3', name: 'הרב אברהם גולדברג', specialty: 'ashkenazi', isAvailable: false },
-  { id: 'r4', name: 'הרבנית מרים רוזנברג', specialty: 'ashkenazi', isAvailable: true },
-];
+import { useLanguage } from '../../contexts/LanguageContext';
+import { findExistingConversation, deleteConversation } from '../../services/supabase/chatService';
+import { isSupabaseConfigured, supabase } from '../../config/supabase';
 
 interface AskExpertScreenProps {
   halachicProfile?: HalachicProfile;
 }
 
 export default function AskExpertScreen({ halachicProfile = 'sephardi' }: AskExpertScreenProps) {
-  const [selectedRabbi, setSelectedRabbi] = useState<Rabbi | null>(null);
+  const { t } = useLanguage();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
 
-  const filteredRabbis = DEMO_RABBIS.filter((r) => r.specialty === halachicProfile);
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const conv = await findExistingConversation(session.user.id);
+        if (!conv) return;
+        const today = new Date().toDateString();
+        const convDay = new Date(conv.createdAt).toDateString();
+        if (convDay !== today) {
+          await deleteConversation(conv.id).catch(() => {});
+          return;
+        }
+        setChatOpen(true);
+      } catch {
+        // network error – show landing page
+      }
+    })();
+  }, []);
 
-  if (selectedRabbi) {
-    return <ChatScreen rabbi={selectedRabbi} onBack={() => setSelectedRabbi(null)} />;
+  if (chatOpen) {
+    return (
+      <ChatScreen
+        halachicProfile={halachicProfile}
+        onBack={() => setChatOpen(false)}
+      />
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>שאלי מומחה</Text>
-          <Text style={styles.subtitle}>
-            שאלותייך מועברות לרבנים המתמחים ב
-            {halachicProfile === 'sephardi' ? 'הלכה ספרדית' : 'הלכה אשכנזית'}
-          </Text>
+      <Modal visible={showBanner} transparent animationType="fade" onRequestClose={() => setShowBanner(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.popupEmoji}>✨</Text>
+            <Text style={styles.popupTitle}>ברוכות הבאות לסיאל!</Text>
+            <Text style={styles.popupBody}>
+              האפליקציה שלנו חדשה ואנחנו עובדות קשה כדי להביא לכן את הטוב ביותר.
+            </Text>
+            <Text style={styles.popupBody}>
+              כרגע אנחנו בתהליך גיוס רבנים מוסמכים שייתנו לכן מענה אישי לכל שאלה — בכל שעה, בצניעות ובכבוד.
+            </Text>
+            <Text style={styles.popupNote}>
+              האפשרות לשאול שאלה תיפתח בקרוב. 🙏
+            </Text>
+            <TouchableOpacity style={styles.popupBtn} onPress={() => setShowBanner(false)} activeOpacity={0.85}>
+              <Text style={styles.popupBtnText}>הבנתי, תודה!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <View style={styles.inner}>
+        <View style={styles.iconWrap}>
+          <Text style={styles.iconText}>📖</Text>
         </View>
 
-        <View style={styles.infoBanner}>
-          <Text style={styles.infoIcon}>🔒</Text>
-          <Text style={styles.infoText}>כל השיחות מוצפנות. שאלותייך פרטיות לחלוטין.</Text>
+        <Text style={styles.title}>{t.askExpertHeroTitle}</Text>
+
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoEmoji}>🕙</Text>
+            <Text style={styles.infoText}>{t.askExpertHours}</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <Text style={styles.infoEmoji}>👤</Text>
+            <Text style={styles.infoText}>{t.askExpertRealRabbi}</Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <Text style={styles.infoEmoji}>🔒</Text>
+            <Text style={styles.infoText}>{t.encryptedInfo}</Text>
+          </View>
         </View>
 
-        <Text style={styles.sectionLabel}>רבנים זמינים</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setChatOpen(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.buttonText}>{t.startChat}</Text>
+        </TouchableOpacity>
 
-        {filteredRabbis.map((rabbi) => (
-          <TouchableOpacity
-            key={rabbi.id}
-            style={[styles.card, !rabbi.isAvailable && styles.cardUnavailable]}
-            onPress={() => rabbi.isAvailable && setSelectedRabbi(rabbi)}
-            activeOpacity={rabbi.isAvailable ? 0.8 : 1}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {rabbi.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}
-              </Text>
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.rabbiName}>{rabbi.name}</Text>
-              <Text style={styles.rabbiSpec}>
-                {rabbi.specialty === 'sephardi' ? 'פוסק ספרדי' : 'פוסק אשכנזי'}
-              </Text>
-            </View>
-            <View style={[styles.badge, rabbi.isAvailable ? styles.badgeAvail : styles.badgeBusy]}>
-              <Text style={styles.badgeText}>{rabbi.isAvailable ? 'זמין' : 'עסוק'}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-
-        {filteredRabbis.length === 0 && (
-          <Text style={styles.empty}>אין רבנים זמינים כרגע. נסי שוב מאוחר יותר.</Text>
-        )}
-
-        <View style={styles.disclaimer}>
-          <Text style={styles.disclaimerText}>
-            השאלות מועברות לרב ביחס לעניינים הלכתיים. למקרי חירום יש לפנות לרופא.
-          </Text>
-        </View>
-      </ScrollView>
+        <Text style={styles.disclaimer}>{t.disclaimer}</Text>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.neutral.beige },
-  header: { padding: spacing.lg, paddingBottom: spacing.sm },
-  title: { fontSize: typography.size.xxl, fontWeight: '700', color: colors.neutral.text },
-  subtitle: { fontSize: typography.size.sm, color: colors.neutral.textLight, marginTop: 4, lineHeight: 20 },
-  infoBanner: {
-    flexDirection: 'row',
+  inner: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    marginHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+    justifyContent: 'center',
+    padding: spacing.xl,
   },
-  infoIcon: { fontSize: 18 },
-  infoText: { flex: 1, fontSize: typography.size.sm, color: colors.status.info, lineHeight: 18 },
-  sectionLabel: {
-    fontSize: typography.size.sm,
-    fontWeight: '600',
-    color: colors.neutral.textMuted,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    letterSpacing: 0.5,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.neutral.white,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  cardUnavailable: { opacity: 0.55 },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: colors.primary.goldLight,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
-  avatarText: { fontSize: typography.size.lg, fontWeight: '700', color: colors.neutral.white },
-  cardInfo: { flex: 1 },
-  rabbiName: { fontSize: typography.size.md, fontWeight: '700', color: colors.neutral.text },
-  rabbiSpec: { fontSize: typography.size.sm, color: colors.neutral.textMuted, marginTop: 2 },
-  badge: { borderRadius: borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  badgeAvail: { backgroundColor: '#E8F8F0' },
-  badgeBusy: { backgroundColor: colors.neutral.beige },
-  badgeText: { fontSize: typography.size.xs, fontWeight: '600', color: colors.neutral.textLight },
-  empty: { textAlign: 'center', color: colors.neutral.textMuted, padding: spacing.xl },
+  iconText: { fontSize: 36 },
+  title: {
+    fontSize: typography.size.xxl,
+    fontWeight: '700',
+    color: colors.neutral.text,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  infoCard: {
+    width: '100%',
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  infoEmoji: { fontSize: 18, width: 24 },
+  infoText: {
+    flex: 1,
+    fontSize: typography.size.sm,
+    color: colors.neutral.textLight,
+    lineHeight: 20,
+    textAlign: 'right',
+  },
+  divider: { height: 0.5, backgroundColor: colors.neutral.beigeDeep },
+  button: {
+    width: '100%',
+    backgroundColor: colors.primary.gold,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.md + 2,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  buttonText: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: colors.neutral.white,
+    letterSpacing: 0.3,
+  },
   disclaimer: {
-    margin: spacing.lg,
-    padding: spacing.md,
-    backgroundColor: colors.neutral.beige,
-    borderRadius: borderRadius.md,
-  },
-  disclaimerText: {
     fontSize: typography.size.xs,
     color: colors.neutral.textMuted,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  popup: {
+    backgroundColor: colors.neutral.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  popupEmoji: { fontSize: 40, marginBottom: spacing.md },
+  popupTitle: {
+    fontSize: typography.size.xl,
+    fontWeight: '700',
+    color: colors.neutral.text,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  popupBody: {
+    fontSize: typography.size.sm,
+    color: colors.neutral.textLight,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.sm,
+  },
+  popupNote: {
+    fontSize: typography.size.sm,
+    color: colors.primary.gold,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  popupBtn: {
+    backgroundColor: colors.primary.gold,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl * 1.5,
+    alignItems: 'center',
+  },
+  popupBtnText: {
+    fontSize: typography.size.md,
+    fontWeight: '700',
+    color: colors.neutral.white,
   },
 });
