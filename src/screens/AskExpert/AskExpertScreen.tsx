@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,50 +7,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
-import { HalachicProfile } from '../../types/halachic';
-import ChatScreen from './ChatScreen';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { findExistingConversation, deleteConversation } from '../../services/supabase/chatService';
-import { isSupabaseConfigured, supabase } from '../../config/supabase';
 
-interface AskExpertScreenProps {
-  halachicProfile?: HalachicProfile;
-}
-
-export default function AskExpertScreen({ halachicProfile = 'sephardi' }: AskExpertScreenProps) {
+export default function AskExpertScreen() {
   const { t } = useLanguage();
-  const [chatOpen, setChatOpen] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const conv = await findExistingConversation(session.user.id);
-        if (!conv) return;
-        const today = new Date().toDateString();
-        const convDay = new Date(conv.createdAt).toDateString();
-        if (convDay !== today) {
-          await deleteConversation(conv.id).catch(() => {});
-          return;
-        }
-        setChatOpen(true);
-      } catch {
-        // network error – show landing page
-      }
-    })();
-  }, []);
-
-  if (chatOpen) {
-    return (
-      <ChatScreen
-        halachicProfile={halachicProfile}
-        onBack={() => setChatOpen(false)}
-      />
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
