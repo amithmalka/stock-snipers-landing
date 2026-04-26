@@ -28,12 +28,46 @@
 <link rel="icon" href="/favicon.ico" /></head>
 
   <body>
-    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
-    <noscript>
-      You need to enable JavaScript to run this app.
-    </noscript>
-    <!-- The root element for your Expo app. -->
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
+    <!-- PWA Install Banner -->
+    <div id="install-banner" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:24px;direction:rtl;">
+      <div style="background:#fff;border-radius:20px;padding:28px;max-width:400px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+        <div style="font-size:44px;margin-bottom:12px;">📲</div>
+        <div style="font-size:20px;font-weight:700;color:#2D1F0E;margin-bottom:10px;">הוסיפי לסך הבית</div>
+        <div style="font-size:14px;color:#7A6A5A;line-height:1.6;margin-bottom:18px;">
+          כדי לקבל חוויה מלאה כמו אפליקציה אמיתית — התקיני את סיאל על המסך הראשי שלך:
+        </div>
+        <div id="install-steps-ios" style="display:none;text-align:right;margin-bottom:20px;font-size:13px;color:#4A3728;line-height:1.8;">
+          <div>1. לחצי על כפתור השיתוף <strong>⬆</strong> בסרגל Safari</div>
+          <div>2. גללי מטה ובחרי <strong>"הוסף למסך הבית"</strong></div>
+          <div>3. לחצי <strong>הוסף</strong> בפינה הימנית</div>
+        </div>
+        <div id="install-steps-android" style="display:none;text-align:right;margin-bottom:20px;font-size:13px;color:#4A3728;line-height:1.8;">
+          <div>1. פתחי את תפריט Chrome (שלוש הנקודות ⋮)</div>
+          <div>2. בחרי <strong>"הוסף לדף הבית"</strong></div>
+          <div>3. אשרי והתקיני</div>
+        </div>
+        <button onclick="document.getElementById('install-banner').style.display='none'" style="background:#C4849A;color:#fff;border:none;border-radius:14px;padding:13px 40px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;width:100%;">הבנתי!</button>
+        <div onclick="document.getElementById('install-banner').style.display='none'" style="font-size:12px;color:#A0906A;text-decoration:underline;cursor:pointer;">אולי מאוחר יותר</div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        if (isStandalone) return;
+        var banner = document.getElementById('install-banner');
+        banner.style.display = 'flex';
+        var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIOS) {
+          document.getElementById('install-steps-ios').style.display = 'block';
+        } else {
+          document.getElementById('install-steps-android').style.display = 'block';
+        }
+      })();
+    </script>
+
   <script src="/_expo/static/js/web/index-92f3f9067ec43f9bfbf9a181d7f0900e.js" defer></script>
 </body>
 </html>
