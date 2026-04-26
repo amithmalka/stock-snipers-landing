@@ -1,0 +1,25 @@
+{
+  "name": "SIEL – ניהול מחזור הלכתי",
+  "short_name": "SIEL",
+  "description": "אפליקציית ניהול מחזור הלכתי, טבילה ותפילה",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#C4849A",
+  "background_color": "#FDF8F5",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/assets/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
