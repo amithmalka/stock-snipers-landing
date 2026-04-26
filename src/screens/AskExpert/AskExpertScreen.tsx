@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
@@ -55,27 +54,6 @@ export default function AskExpertScreen({ halachicProfile = 'sephardi' }: AskExp
 
   return (
     <SafeAreaView style={styles.container}>
-      <Modal visible={showBanner} transparent animationType="fade" onRequestClose={() => setShowBanner(false)}>
-        <View style={styles.overlay}>
-          <View style={styles.popup}>
-            <Text style={styles.popupEmoji}>✨</Text>
-            <Text style={styles.popupTitle}>ברוכות הבאות לסיאל!</Text>
-            <Text style={styles.popupBody}>
-              האפליקציה שלנו חדשה ואנחנו עובדות קשה כדי להביא לכן את הטוב ביותר.
-            </Text>
-            <Text style={styles.popupBody}>
-              כרגע אנחנו בתהליך גיוס רבנים מוסמכים שייתנו לכן מענה אישי לכל שאלה — בכל שעה, בצניעות ובכבוד.
-            </Text>
-            <Text style={styles.popupNote}>
-              האפשרות לשאול שאלה תיפתח בקרוב. 🙏
-            </Text>
-            <TouchableOpacity style={styles.popupBtn} onPress={() => setShowBanner(false)} activeOpacity={0.85}>
-              <Text style={styles.popupBtnText}>הבנתי, תודה!</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       <View style={styles.inner}>
         <View style={styles.iconWrap}>
           <Text style={styles.iconText}>📖</Text>
@@ -102,7 +80,7 @@ export default function AskExpertScreen({ halachicProfile = 'sephardi' }: AskExp
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => setChatOpen(true)}
+          onPress={() => setShowBanner(true)}
           activeOpacity={0.85}
         >
           <Text style={styles.buttonText}>{t.startChat}</Text>
@@ -110,6 +88,25 @@ export default function AskExpertScreen({ halachicProfile = 'sephardi' }: AskExp
 
         <Text style={styles.disclaimer}>{t.disclaimer}</Text>
       </View>
+
+      {showBanner && (
+        <View style={styles.overlay}>
+          <View style={styles.popup}>
+            <Text style={styles.popupEmoji}>✨</Text>
+            <Text style={styles.popupTitle}>ברוכות הבאות לסיאל!</Text>
+            <Text style={styles.popupBody}>
+              האפליקציה שלנו חדשה ואנחנו עובדות קשה כדי להביא לכן את הטוב ביותר.
+            </Text>
+            <Text style={styles.popupBody}>
+              כרגע אנחנו בתהליך גיוס רבנים מוסמכים שייתנו לכן מענה אישי לכל שאלה — בכל שעה, בצניעות ובכבוד.
+            </Text>
+            <Text style={styles.popupNote}>האפשרות לשאול שאלה תיפתח בקרוב 🙏</Text>
+            <TouchableOpacity style={styles.popupBtn} onPress={() => setShowBanner(false)} activeOpacity={0.85}>
+              <Text style={styles.popupBtnText}>הבנתי, תודה!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -187,7 +184,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
