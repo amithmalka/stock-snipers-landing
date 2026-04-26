@@ -14,9 +14,7 @@ function InstallBanner() {
     try {
       const w = window as any;
       const isStandalone = w.matchMedia?.('(display-mode: standalone)').matches || w.navigator?.standalone;
-      if (isStandalone) return;
-      const dismissed = localStorage.getItem('siel_install_dismissed');
-      if (!dismissed) setVisible(true);
+      if (!isStandalone) setVisible(true);
     } catch {}
   }, []);
 
@@ -25,7 +23,6 @@ function InstallBanner() {
   const isIOS = Platform.OS === 'web' && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   function dismiss() {
-    localStorage.setItem('siel_install_dismissed', '1');
     setVisible(false);
   }
 
