@@ -13,6 +13,19 @@ import { fetchSlotsForDate, createAppointment, TimeSlot } from '../../services/s
 import { isSupabaseConfigured } from '../../config/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
 
+// Web: Feather TTF doesn't render reliably in browsers — use emoji fallbacks
+const WEB_ICON_MAP: Record<string, string> = {
+  search: '🔍', x: '✕', heart: '🤍', 'map-pin': '📍',
+  'chevron-left': '›', calendar: '📅', phone: '📞', home: '🏠', navigation: '🧭',
+};
+
+function Icon({ name, size, color, style }: { name: string; size: number; color?: string; style?: object }) {
+  if (Platform.OS === 'web') {
+    return <Text style={[{ fontSize: size * 0.9, lineHeight: size * 1.3, color }, style]}>{WEB_ICON_MAP[name] ?? '•'}</Text>;
+  }
+  return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
+}
+
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -48,11 +61,6 @@ const CATEGORIES = [
   { label: 'עיסוי', value: 'עיסוי' },
 ];
 
-const DEMO_PROVIDERS: ServiceProvider[] = [
-  { id: 'p1', name: 'נגה ביוטי', category: 'nail', specialty: 'ציפורניים גל', city: 'ירושלים', latitude: 31.776, longitude: 35.217, rating: 4.9, portfolioImages: [], phone: '+972501234567' },
-  { id: 'p2', name: 'ג׳ל & נייל בר', category: 'gel', specialty: 'ציפורניים גל', city: 'תל אביב', latitude: 32.080, longitude: 34.780, rating: 4.7, portfolioImages: [], phone: '+972502345678' },
-  { id: 'p3', name: 'לוּנה מניקור', category: 'nail', specialty: 'פדיקור', city: 'ירושלים', latitude: 31.770, longitude: 35.210, rating: 4.8, portfolioImages: [], phone: '+972503456789' },
-];
 
 function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClose: () => void }) {
   const { t, lang } = useLanguage();
@@ -240,19 +248,19 @@ function ProviderDetailModal({ provider, onClose }: { provider: ServiceProvider 
               <View style={detailStyles.metaRow}>
                 {provider.city && (
                   <View style={detailStyles.metaItem}>
-                    <Feather name="map-pin" size={13} color={colors.primary.rose} />
+                    <Icon name="map-pin" size={13} color={colors.primary.rose} />
                     <Text style={detailStyles.metaText}>{provider.city}</Text>
                   </View>
                 )}
                 {provider.address && (
                   <View style={detailStyles.metaItem}>
-                    <Feather name="home" size={13} color={colors.primary.rose} />
+                    <Icon name="home" size={13} color={colors.primary.rose} />
                     <Text style={detailStyles.metaText}>{provider.address}</Text>
                   </View>
                 )}
                 {provider.distanceKm !== undefined && (
                   <View style={detailStyles.metaItem}>
-                    <Feather name="navigation" size={13} color={colors.primary.rose} />
+                    <Icon name="navigation" size={13} color={colors.primary.rose} />
                     <Text style={detailStyles.metaText}>{provider.distanceKm.toFixed(1)} ק״מ</Text>
                   </View>
                 )}
@@ -275,7 +283,7 @@ function ProviderDetailModal({ provider, onClose }: { provider: ServiceProvider 
 
           {!showBooking ? (
             <TouchableOpacity style={detailStyles.bookBtn} onPress={() => setShowBooking(true)}>
-              <Feather name="calendar" size={16} color={colors.neutral.white} style={{ marginRight: 6 }} />
+              <Icon name="calendar" size={16} color={colors.neutral.white} style={{ marginRight: 6 }} />
               <Text style={detailStyles.bookText}>{t.bookAppointment}</Text>
             </TouchableOpacity>
           ) : (
@@ -285,7 +293,7 @@ function ProviderDetailModal({ provider, onClose }: { provider: ServiceProvider 
           {!showBooking && (
             <>
               <TouchableOpacity style={detailStyles.callBtn} onPress={callProvider}>
-                <Feather name="phone" size={16} color={colors.primary.rose} style={{ marginRight: 6 }} />
+                <Icon name="phone" size={16} color={colors.primary.rose} style={{ marginRight: 6 }} />
                 <Text style={detailStyles.callText}>{t.callProvider}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={detailStyles.closeBtn} onPress={onClose}>
@@ -304,7 +312,7 @@ export default function ServicesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [providers, setProviders] = useState<ServiceProvider[]>(DEMO_PROVIDERS);
+  const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
 
@@ -317,25 +325,26 @@ export default function ServicesScreen() {
     });
   }, []);
 
-  const runSearch = useCallback(async (q: string, loc: typeof userLocation) => {
+  const runSearch = useCallback(async (q: string, cat: string | null, loc: typeof userLocation) => {
     if (!isSupabaseConfigured) return;
     setIsLoading(true);
     try {
-      const results = await searchProviders(q);
+      const combined = [q.trim(), cat].filter(Boolean).join(' ');
+      const results = await searchProviders(combined);
       const withDistance = results.map((p) => ({
         ...p,
         distanceKm: loc && p.latitude !== 0 ? haversineKm(loc.lat, loc.lon, p.latitude, p.longitude) : undefined,
       }));
       if (loc) withDistance.sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
-      setProviders(withDistance.length > 0 ? withDistance : (q ? [] : DEMO_PROVIDERS));
+      setProviders(withDistance.length > 0 ? withDistance : []);
     } catch { } finally { setIsLoading(false); }
   }, []);
 
-  useEffect(() => { runSearch(searchQuery, userLocation); }, [userLocation]); // eslint-disable-line
+  useEffect(() => { runSearch(searchQuery, selectedCategory, userLocation); }, [userLocation]); // eslint-disable-line
   useEffect(() => {
-    const t2 = setTimeout(() => runSearch(searchQuery, userLocation), 400);
+    const t2 = setTimeout(() => runSearch(searchQuery, selectedCategory, userLocation), 400);
     return () => clearTimeout(t2);
-  }, [searchQuery]); // eslint-disable-line
+  }, [searchQuery, selectedCategory]); // eslint-disable-line
 
   return (
     <SafeAreaView style={styles.container}>
@@ -345,7 +354,7 @@ export default function ServicesScreen() {
       </View>
 
       <View style={styles.searchBar}>
-        <Feather name="search" size={16} color={colors.neutral.textMuted} />
+        <Icon name="search" size={16} color={colors.neutral.textMuted} />
         <TextInput
           style={styles.searchInput}
           placeholder={t.searchPlaceholder}
@@ -356,7 +365,7 @@ export default function ServicesScreen() {
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Feather name="x" size={16} color={colors.neutral.textMuted} />
+            <Icon name="x" size={16} color={colors.neutral.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -391,28 +400,28 @@ export default function ServicesScreen() {
         ListEmptyComponent={
           isLoading
             ? <ActivityIndicator color={colors.primary.gold} style={{ marginTop: spacing.xl }} />
-            : <Text style={styles.empty}>{t.noResults}</Text>
+            : <Text style={styles.empty}>{searchQuery.length > 0 ? `אין שירותים זמינים ב${searchQuery}` : t.noResults}</Text>
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => setSelectedProvider(item)} activeOpacity={0.8}>
             <View style={styles.cardAvatar}>
               {item.profileImageUrl
                 ? <Image source={{ uri: item.profileImageUrl }} style={styles.cardAvatarImg} />
-                : <Feather name="heart" size={22} color={colors.primary.rose} />}
+                : <Icon name="heart" size={22} color={colors.primary.rose} />}
             </View>
             <View style={styles.cardInfo}>
               <Text style={styles.cardName}>{item.name}</Text>
               <Text style={styles.cardCategory}>{item.specialty || item.category}</Text>
               {item.city && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Feather name="map-pin" size={11} color={colors.neutral.textMuted} />
+                  <Icon name="map-pin" size={11} color={colors.neutral.textMuted} />
                   <Text style={styles.cardCity}>{item.city}</Text>
                 </View>
               )}
             </View>
             {item.distanceKm !== undefined
               ? <Text style={styles.cardDist}>{item.distanceKm.toFixed(1)} ק״מ</Text>
-              : <Feather name="chevron-left" size={18} color={colors.neutral.sand} />}
+              : <Icon name="chevron-left" size={18} color={colors.neutral.sand} />}
           </TouchableOpacity>
         )}
       />
