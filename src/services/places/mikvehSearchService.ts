@@ -60,6 +60,54 @@ function friendlyError(status: number, body: string): Error {
   return new Error('החיפוש נכשל. נסי שוב.');
 }
 
+const LEGACY_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+
+interface LegacyPlace {
+  place_id: string;
+  name?: string;
+  formatted_address?: string;
+  formatted_phone_number?: string;
+  geometry?: { location?: { lat: number; lng: number } };
+}
+
+/**
+ * The older Places endpoint, used only when the new one is unavailable.
+ *
+ * The two are separate products in Google Cloud and a project can have one
+ * enabled without the other, so falling back here keeps search working instead
+ * of failing outright. It returns no phone or opening hours (those need a
+ * follow-up Place Details call), which is why it is the second choice.
+ */
+async function runLegacyQuery(
+  textQuery: string,
+  languageCode: string,
+  opts: SearchOptions,
+): Promise<NewPlace[]> {
+  const params = new URLSearchParams({ query: textQuery, language: languageCode, key: API_KEY });
+  if (opts.latitude != null && opts.longitude != null) {
+    params.set('location', `${opts.latitude},${opts.longitude}`);
+    params.set('radius', '50000');
+  }
+
+  const res = await fetch(`${LEGACY_URL}?${params.toString()}`);
+  if (!res.ok) throw friendlyError(res.status, await res.text());
+
+  const json = await res.json();
+  if (json.status !== 'OK' && json.status !== 'ZERO_RESULTS') {
+    throw friendlyError(403, `${json.status}: ${json.error_message ?? ''}`);
+  }
+
+  return ((json.results ?? []) as LegacyPlace[]).map((p) => ({
+    id: p.place_id,
+    displayName: { text: p.name ?? '' },
+    formattedAddress: p.formatted_address,
+    location: p.geometry?.location
+      ? { latitude: p.geometry.location.lat, longitude: p.geometry.location.lng }
+      : undefined,
+    internationalPhoneNumber: p.formatted_phone_number,
+  }));
+}
+
 async function runQuery(
   textQuery: string,
   languageCode: string,
@@ -90,7 +138,16 @@ async function runQuery(
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) throw friendlyError(res.status, await res.text());
+  if (!res.ok) {
+    const detail = await res.text();
+    // Places API (New) and the legacy Places API are enabled separately in
+    // Google Cloud. If the new one is off, use the old one rather than failing.
+    if (res.status === 403 || res.status === 404) {
+      console.warn('[mikveh] Places API (New) unavailable, falling back to legacy');
+      return runLegacyQuery(textQuery, languageCode, opts);
+    }
+    throw friendlyError(res.status, detail);
+  }
 
   const json = await res.json();
   return (json.places ?? []) as NewPlace[];
