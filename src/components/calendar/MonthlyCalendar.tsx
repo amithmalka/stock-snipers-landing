@@ -10,7 +10,7 @@ import {
 import { CalendarDay, DayStatus } from './CalendarDay';
 import { colors, typography, spacing } from '../../config/theme';
 import { VesetDate } from '../../types/halachic';
-import { toHebrewDate } from '../../utils/hebrewDate';
+import { toHebrewDate, toHebrewNumeral } from '../../utils/hebrewDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DAY_LABELS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
@@ -22,7 +22,10 @@ interface MonthlyCalendarProps {
   cycleDates: string[];      // ISO dates of cycle starts
   hefsekDate?: string;       // ISO date
   mikvehDate?: string;       // ISO date
+  cleanDays?: string[];      // ISO dates — the 7 clean days (excluding hefsek itself)
+  inCycleDays?: string[];    // ISO dates — days from cycle start until hefsek (or today)
   onDayPress: (date: Date, vesot: VesetDate[]) => void;
+  onDayLongPress?: (date: Date) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
 }
@@ -46,14 +49,14 @@ function buildMonthGrid(year: number, month: number): DayCell[] {
   for (let i = startWeekday - 1; i >= 0; i--) {
     const d = new Date(year, month - 1, prevMonthLastDay - i);
     const hd = toHebrewDate(d);
-    cells.push({ date: d, day: d.getDate(), hebrewDay: String(hd.day), isCurrentMonth: false });
+    cells.push({ date: d, day: d.getDate(), hebrewDay: toHebrewNumeral(hd.day), isCurrentMonth: false });
   }
 
   // Current month days
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const date = new Date(year, month, d);
     const hd = toHebrewDate(date);
-    cells.push({ date, day: d, hebrewDay: String(hd.day), isCurrentMonth: true });
+    cells.push({ date, day: d, hebrewDay: toHebrewNumeral(hd.day), isCurrentMonth: true });
   }
 
   // Trailing cells to fill last row
@@ -62,7 +65,7 @@ function buildMonthGrid(year: number, month: number): DayCell[] {
     for (let d = 1; d <= 7 - remainder; d++) {
       const date = new Date(year, month + 1, d);
       const hd = toHebrewDate(date);
-      cells.push({ date, day: d, hebrewDay: String(hd.day), isCurrentMonth: false });
+      cells.push({ date, day: d, hebrewDay: toHebrewNumeral(hd.day), isCurrentMonth: false });
     }
   }
 
@@ -70,7 +73,10 @@ function buildMonthGrid(year: number, month: number): DayCell[] {
 }
 
 function isoOf(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
@@ -80,7 +86,10 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
   cycleDates,
   hefsekDate,
   mikvehDate,
+  cleanDays,
+  inCycleDays,
   onDayPress,
+  onDayLongPress,
   onPrevMonth,
   onNextMonth,
 }) => {
@@ -96,6 +105,8 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
   }, [vesetDates]);
 
   const cycleSet = useMemo(() => new Set(cycleDates), [cycleDates]);
+  const cleanDaysSet = useMemo(() => new Set(cleanDays ?? []), [cleanDays]);
+  const inCycleSet = useMemo(() => new Set(inCycleDays ?? []), [inCycleDays]);
 
   const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
 
@@ -111,6 +122,8 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
     if (cycleSet.has(iso)) return 'cycle_start';
     if (iso === mikvehDate) return 'mikveh';
     if (iso === hefsekDate) return 'hefsek';
+    if (cleanDaysSet.has(iso)) return 'clean_day';
+    if (inCycleSet.has(iso)) return 'in_cycle';
     const vesot = vesetMap[iso];
     if (vesot) return vesot.some((v) => v.isFixed) ? 'veset_fixed' : 'veset_non_fixed';
     return 'clean';
@@ -158,6 +171,11 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
                   onDayPress(cell.date, vesetMap[isoOf(cell.date)] ?? []);
                 }
               }}
+              onLongPress={() => {
+                if (cell.date && onDayLongPress) {
+                  onDayLongPress(cell.date);
+                }
+              }}
             />
           ))}
         </View>
@@ -168,7 +186,9 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
         {[
           { color: colors.calendar.vesetFixed, label: 'וסת קבוע' },
           { color: colors.calendar.vesetNonFixed, label: 'וסת שאינו קבוע' },
+          { color: colors.calendar.inCycle, label: 'וסת פעיל - ממתין להפסק' },
           { color: colors.calendar.hefsek, label: 'הפסק טהרה' },
+          { color: colors.calendar.cleanDay, label: '7 ימים נקיים' },
           { color: colors.calendar.mikveh, label: 'ליל טבילה' },
         ].map(({ color, label }) => (
           <View key={label} style={styles.legendItem}>
@@ -183,15 +203,15 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.neutral.cream,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: spacing.md,
     marginHorizontal: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowColor: '#A87872',
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',

@@ -10,17 +10,25 @@ import LoginScreen from '../screens/Auth/LoginScreen';
 import OnboardingScreen from '../screens/Auth/OnboardingScreen';
 
 export default function AppNavigator() {
-  const { session, user, isLoading, isDemoMode } = useAuth();
+  const { session, user, isLoading, isDemoMode, refreshUser } = useAuth();
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  // Detect first-time users: session exists but no display name yet
+  // Detect first-time users: session exists but profile is missing or has no name
   useEffect(() => {
-    if (!isLoading && session && user !== null && !user.displayName && !needsOnboarding) {
-      setNeedsOnboarding(true);
+    if (isLoading || !session) return;
+    // New signup: session exists but no profile row yet → onboarding
+    if (user === null) {
+      if (!needsOnboarding) setNeedsOnboarding(true);
+      return;
     }
-  }, [isLoading, session, user]);
+    if (!user.displayName) {
+      if (!needsOnboarding) setNeedsOnboarding(true);
+    } else {
+      if (needsOnboarding) setNeedsOnboarding(false);
+    }
+  }, [isLoading, session, user, needsOnboarding]);
 
-  // Show a spinner while auth state is resolving
+  // Show spinner while auth state is resolving
   if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutral.beige }}>
@@ -55,18 +63,33 @@ export default function AppNavigator() {
     if (needsOnboarding) {
       return (
         <NavigationContainer>
-          <OnboardingScreen onComplete={() => setNeedsOnboarding(false)} />
+          <OnboardingScreen onComplete={async () => {
+            await refreshUser();
+            setNeedsOnboarding(false);
+          }} />
         </NavigationContainer>
       );
     }
   }
 
-  // Fully authenticated (or demo mode) — show the app
+  // Don't render the main TabNavigator until we have a user.id —
+  // CalendarScreen and others use userId for DB writes; passing undefined
+  // causes silent RLS failures. While we wait, show a brief spinner.
+  // (For demo mode, fall through with default values.)
+  if (!isDemoMode && !user?.id) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutral.beige }}>
+        <ActivityIndicator size="large" color={colors.primary.gold} />
+      </View>
+    );
+  }
+
   const activeUser = user ?? { halachicProfile: 'sephardi' as HalachicProfile, biometricEnabled: false };
 
   return (
     <NavigationContainer>
       <TabNavigator
+        userId={user?.id}
         halachicProfile={activeUser.halachicProfile}
         biometricEnabled={activeUser.biometricEnabled}
       />

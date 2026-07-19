@@ -49,15 +49,17 @@ function rowToProvider(r: ProviderRow, userLat?: number, userLon?: number): Serv
     city: r.city,
     address: r.address,
     bio: r.bio,
+    // Profile image: small avatar — 240x240
     profileImageUrl: r.profile_image_path
-      ? `${SUPABASE_URL}/storage/v1/object/public/service-portfolios/${r.profile_image_path}`
+      ? `${SUPABASE_URL}/storage/v1/render/image/public/service-portfolios/${r.profile_image_path}?width=240&height=240&resize=cover&quality=80`
       : undefined,
     latitude: r.latitude,
     longitude: r.longitude,
     rating: r.rating,
     phone: r.phone,
+    // Portfolio: medium-sized for grid view (loaded eagerly by user click)
     portfolioImages: (r.portfolio_paths ?? []).map(
-      (p: string) => `${SUPABASE_URL}/storage/v1/object/public/service-portfolios/${p}`,
+      (p: string) => `${SUPABASE_URL}/storage/v1/render/image/public/service-portfolios/${p}?width=600&height=600&resize=cover&quality=78`,
     ),
     distanceKm,
   };
@@ -66,27 +68,20 @@ function rowToProvider(r: ProviderRow, userLat?: number, userLon?: number): Serv
 /**
  * Search providers by free text (specialty + city + name).
  * e.g. query = "ציפורניים ירושלים"
+ * Uses a single query with inner join to avoid double round-trip.
  */
 export async function searchProviders(query: string): Promise<ServiceProvider[]> {
   const q = query.trim();
 
-  // Only show providers that completed all mandatory fields + have at least one active service
-  const { data: serviceRows } = await supabase
-    .from('provider_services')
-    .select('provider_id')
-    .eq('is_active', true);
-  const providerIdsWithServices = [...new Set((serviceRows ?? []).map((r: { provider_id: string }) => r.provider_id))];
-
-  if (providerIdsWithServices.length === 0) return [];
-
+  // Single query: join with provider_services to ensure at least one active service exists
   let dbQuery = supabase
     .from('service_providers')
-    .select('*')
+    .select('*, provider_services!inner(id)')
     .eq('is_active', true)
+    .eq('provider_services.is_active', true)
     .not('bio', 'is', null)
     .neq('bio', '')
-    .not('portfolio_paths', 'eq', '{}')
-    .in('id', providerIdsWithServices);
+    .not('portfolio_paths', 'eq', '{}');
 
   if (q) {
     dbQuery = dbQuery.or(
@@ -94,7 +89,12 @@ export async function searchProviders(query: string): Promise<ServiceProvider[]>
     );
   }
 
-  const { data, error } = await dbQuery.limit(50);
+  const { withTimeout } = await import('./session');
+  const { data, error } = await withTimeout(
+    dbQuery.limit(50).then((r) => r),
+    6000,
+    'searchProviders',
+  );
   if (error) throw error;
   return (data as ProviderRow[]).map((r) => rowToProvider(r));
 }
@@ -116,7 +116,7 @@ export async function fetchNearbyProviders(
 
   if (category) query = query.eq('category', category);
 
-  const { data, error } = await query;
+  const { data, error } = await query.limit(200);
   if (error) throw error;
 
   return (data as ProviderRow[])
@@ -132,14 +132,40 @@ export interface ProviderService {
   duration_minutes: number;
 }
 
+// Same-origin path (Vercel rewrite proxies to siel-backoffice)
+const BACKOFFICE_SERVICES = '/api/public-services';
+
 export async function fetchProviderServices(providerId: string): Promise<ProviderService[]> {
-  const { data } = await supabase
-    .from('provider_services')
-    .select('id, name, price, duration_minutes')
-    .eq('provider_id', providerId)
-    .eq('is_active', true)
-    .order('name');
-  return (data ?? []) as ProviderService[];
+  // PRIMARY: backoffice API
+  try {
+    const url = `${BACKOFFICE_SERVICES}?providerId=${encodeURIComponent(providerId)}&_t=${Date.now()}`;
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json.services)) return json.services as ProviderService[];
+    }
+  } catch (e) {
+    console.warn('[fetchProviderServices] API failed, falling back to direct query:', e);
+  }
+
+  // FALLBACK: direct Supabase
+  const { withTimeout } = await import('./session');
+  try {
+    const { data } = await withTimeout(
+      supabase
+        .from('provider_services')
+        .select('id, name, price, duration_minutes')
+        .eq('provider_id', providerId)
+        .eq('is_active', true)
+        .order('name')
+        .then((r) => r),
+      6000,
+      'fetchProviderServices',
+    );
+    return (data ?? []) as ProviderService[];
+  } catch {
+    return [];
+  }
 }
 
 /** Get a signed (temporary) URL for a portfolio image stored in Supabase Storage. */

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
 import { Onah } from '../../types/halachic';
 import { toHebrewDate } from '../../utils/hebrewDate';
@@ -60,9 +61,16 @@ export const CycleEntryModal: React.FC<CycleEntryModalProps> = ({
                 onPress={() => setOnah(o)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.onahText, onah === o && styles.onahTextActive]}>
-                  {o === 'day' ? '☀️  יום' : '🌙  לילה'}
-                </Text>
+                <View style={styles.onahRowInner}>
+                  <Feather
+                    name={o === 'day' ? 'sun' : 'moon'}
+                    size={16}
+                    color={onah === o ? colors.primary.gold : colors.neutral.textLight}
+                  />
+                  <Text style={[styles.onahText, onah === o && styles.onahTextActive]}>
+                    {o === 'day' ? 'יום' : 'לילה'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -151,6 +159,11 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral.beigeDeep,
     alignItems: 'center',
     backgroundColor: colors.neutral.white,
+  },
+  onahRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   onahBtnActive: {
     borderColor: colors.primary.gold,

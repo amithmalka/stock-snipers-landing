@@ -22,7 +22,7 @@ function Icon({ name, size, color, style }: { name: string; size: number; color?
   if (Platform.OS === 'web') {
     return <Text style={[{ fontSize: size * 0.9, lineHeight: size * 1.3, color }, style]}>{WEB_ICON_MAP[name] ?? '•'}</Text>;
   }
-  return <Icon name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
+  return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
 }
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
 import { ForumPost } from '../../types/models';
@@ -134,6 +134,7 @@ function PostDetail({ post, onBack, onReplyAdded }: PostDetailProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   function timeAgo(isoDate: string): string {
     const diff = Date.now() - new Date(isoDate).getTime();
@@ -145,22 +146,28 @@ function PostDetail({ post, onBack, onReplyAdded }: PostDetailProps) {
   }
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      fetchReplies(post.id)
-        .then(setReplies)
-        .catch(() => setReplies([]))
-        .finally(() => setIsLoading(false));
-    } else {
+    if (!isSupabaseConfigured) {
       setReplies([]);
       setIsLoading(false);
+      return;
     }
+    // Hard safety so spinner never hangs forever
+    const safety = setTimeout(() => setIsLoading(false), 8000);
+    fetchReplies(post.id)
+      .then(setReplies)
+      .catch(() => setReplies([]))
+      .finally(() => {
+        clearTimeout(safety);
+        setIsLoading(false);
+      });
   }, [post.id]);
 
   async function handleSendReply() {
     const clean = sanitizeInput(replyText);
     if (!clean) return;
+    setReplyError(null);
     if (!passesModeration(clean)) {
-      Alert.alert(t.inappropriateContent, t.replyBreachRules);
+      setReplyError(t.replyBreachRules);
       return;
     }
     setIsSending(true);
@@ -181,14 +188,16 @@ function PostDetail({ post, onBack, onReplyAdded }: PostDetailProps) {
       setReplyText('');
       onReplyAdded(post.id);
     } catch (e: unknown) {
-      Alert.alert(t.error, e instanceof Error ? e.message : t.errorCannotReply);
+      const msg = e instanceof Error ? e.message : t.errorCannotReply;
+      console.error('[Community] reply failed:', e);
+      setReplyError(msg);
     } finally {
       setIsSending(false);
     }
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={detailStyles.header}>
         <TouchableOpacity onPress={onBack} style={detailStyles.backBtn}>
           <Icon name="arrow-right" size={22} color={colors.neutral.text} />
@@ -232,13 +241,18 @@ function PostDetail({ post, onBack, onReplyAdded }: PostDetailProps) {
           )}
         />
 
+        {replyError && (
+          <View style={detailStyles.replyErrorBox}>
+            <Text style={detailStyles.replyErrorText}>{replyError}</Text>
+          </View>
+        )}
         <View style={detailStyles.replyBar}>
           <TextInput
             style={detailStyles.replyInput}
             placeholder={t.replyAnonPlaceholder}
             placeholderTextColor={colors.neutral.textMuted}
             value={replyText}
-            onChangeText={setReplyText}
+            onChangeText={(v) => { setReplyText(v); if (replyError) setReplyError(null); }}
             maxLength={500}
             textAlign="right"
             multiline
@@ -271,18 +285,42 @@ export default function CommunityScreen() {
     return t.timeDaysAgo(Math.floor(hours / 24));
   }
 
-  const [posts, setPosts] = useState<ForumPost[]>([]);
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const FORUM_CACHE_KEY = 'siel.forum.cache';
+  const loadCachedPosts = (): ForumPost[] => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return [];
+      const raw = window.localStorage.getItem(FORUM_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  };
+
+  const [posts, setPosts] = useState<ForumPost[]>(() => loadCachedPosts());
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured && loadCachedPosts().length === 0);
   const [showNewPost, setShowNewPost] = useState(false);
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    setIsLoading(true);
+    // Hard safety: spinner can't run more than 8 seconds
+    const safety = setTimeout(() => setIsLoading(false), 8000);
     fetchPosts()
-      .then(setPosts)
+      .then((fresh) => {
+        if (fresh && fresh.length > 0) {
+          setPosts(fresh);
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              window.localStorage.setItem(FORUM_CACHE_KEY, JSON.stringify(fresh));
+            }
+          } catch {}
+        }
+      })
       .catch(() => {})
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        clearTimeout(safety);
+        setIsLoading(false);
+      });
   }, []);
 
   const handleNewPost = useCallback(async (title: string, content: string) => {
@@ -323,7 +361,7 @@ export default function CommunityScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t.communityTitle}</Text>
         <TouchableOpacity style={styles.newPostBtn} onPress={() => setShowNewPost(true)}>
@@ -370,13 +408,13 @@ export default function CommunityScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral.beige },
+  container: { flex: 1, backgroundColor: colors.neutral.cream },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, paddingBottom: spacing.md },
   title: { fontSize: typography.size.xxl, fontWeight: '700', color: colors.neutral.text },
   newPostBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary.gold, borderRadius: borderRadius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 4 },
   newPostText: { color: colors.neutral.white, fontSize: typography.size.sm, fontWeight: '700' },
   list: { padding: spacing.lg, gap: spacing.sm, paddingTop: spacing.xs },
-  card: { backgroundColor: colors.neutral.white, borderRadius: borderRadius.lg, padding: spacing.md, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: spacing.md, shadowColor: '#A87872', shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 10 }, elevation: 10 },
   postTitle: { fontSize: typography.size.md, fontWeight: '700', color: colors.neutral.text, marginBottom: 6, textAlign: 'right' },
   postContent: { fontSize: typography.size.sm, color: colors.neutral.textLight, lineHeight: 20, textAlign: 'right', marginBottom: spacing.md },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -407,6 +445,8 @@ const detailStyles = StyleSheet.create({
   replyTime: { fontSize: typography.size.xs, color: colors.neutral.textMuted },
   replyContent: { fontSize: typography.size.sm, color: colors.neutral.text, lineHeight: 20, textAlign: 'right' },
   replyBar: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, padding: spacing.md, paddingBottom: Platform.OS === 'ios' ? spacing.lg : spacing.md, backgroundColor: colors.neutral.white, borderTopWidth: 0.5, borderTopColor: colors.neutral.beigeDeep },
+  replyErrorBox: { backgroundColor: '#FEE2E2', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 0.5, borderTopColor: '#FCA5A5' },
+  replyErrorText: { color: '#B91C1C', fontSize: typography.size.xs, textAlign: 'right' },
   replyInput: { flex: 1, backgroundColor: colors.neutral.beige, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: typography.size.sm, color: colors.neutral.text, maxHeight: 100 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary.gold, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { opacity: 0.45 },

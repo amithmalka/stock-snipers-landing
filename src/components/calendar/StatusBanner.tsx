@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
 import { VesetDate } from '../../types/halachic';
 import { toHebrewDate } from '../../utils/hebrewDate';
 
 type AppStatus =
-  | { kind: 'cycle_active'; dayNum: number; hefsekDate: string }
+  | { kind: 'cycle_active'; dayNum: number }
   | { kind: 'counting_clean'; dayNum: number; mikvehDate: string }
   | { kind: 'veset_approaching'; nextVeset: VesetDate; daysAway: number }
   | { kind: 'clear' };
@@ -37,7 +38,9 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status }) => {
   if (status.kind === 'clear') {
     return (
       <View style={[styles.banner, styles.bannerClear]}>
-        <Text style={styles.icon}>✨</Text>
+        <View style={styles.iconCircle}>
+          <Feather name="check" size={18} color={colors.primary.rose} />
+        </View>
         <View style={styles.textBlock}>
           <Text style={styles.primary}>מצב: טהורה</Text>
           <Text style={styles.secondary}>אין וסתות צפויים בקרוב</Text>
@@ -47,16 +50,18 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status }) => {
   }
 
   if (status.kind === 'cycle_active') {
-    const daysToHefsek = daysUntil(status.hefsekDate);
+    const canHefsek = status.dayNum >= 5;
     return (
       <View style={[styles.banner, styles.bannerCycle]}>
-        <Text style={styles.icon}>📍</Text>
+        <View style={styles.iconCircle}>
+          <Feather name="droplet" size={18} color={colors.primary.rose} />
+        </View>
         <View style={styles.textBlock}>
           <Text style={styles.primary}>יום {status.dayNum} לווסת</Text>
           <Text style={styles.secondary}>
-            {daysToHefsek > 0
-              ? `הפסק טהרה בעוד ${daysToHefsek} ימים`
-              : 'ניתן לבצע הפסק טהרה היום'}
+            {canHefsek
+              ? 'ניתן לבצע הפסק טהרה היום לפני השקיעה'
+              : `הפסק טהרה מותר מיום 5 בלבד · עוד ${5 - status.dayNum} ימים`}
           </Text>
         </View>
         <View style={styles.countBadge}>
@@ -72,7 +77,9 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status }) => {
     const hebrewMikveh = formatHebrewDate(status.mikvehDate);
     return (
       <View style={[styles.banner, styles.bannerCounting]}>
-        <Text style={styles.icon}>🌿</Text>
+        <View style={styles.iconCircle}>
+          <Feather name="check-circle" size={18} color={colors.primary.rose} />
+        </View>
         <View style={styles.textBlock}>
           <Text style={styles.primary}>יום {status.dayNum} לספירה</Text>
           <Text style={styles.secondary}>
@@ -91,7 +98,9 @@ export const StatusBanner: React.FC<StatusBannerProps> = ({ status }) => {
     const { nextVeset, daysAway } = status;
     return (
       <View style={[styles.banner, styles.bannerVeset]}>
-        <Text style={styles.icon}>⚠️</Text>
+        <View style={styles.iconCircle}>
+          <Feather name="bell" size={18} color={colors.primary.rose} />
+        </View>
         <View style={styles.textBlock}>
           <Text style={styles.primary}>{VESET_NAMES[nextVeset.type]} מתקרב</Text>
           <Text style={styles.secondary}>
@@ -122,7 +131,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   bannerClear: {
-    backgroundColor: '#F0FAF5',
+    backgroundColor: '#EDF4F1',
     borderLeftWidth: 4,
     borderLeftColor: colors.calendar.hefsek,
   },
@@ -132,17 +141,22 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.primary.rose,
   },
   bannerCounting: {
-    backgroundColor: '#F0FAF5',
+    backgroundColor: '#EAF0EF',
     borderLeftWidth: 4,
-    borderLeftColor: colors.calendar.hefsek,
+    borderLeftColor: colors.calendar.mikveh,
   },
   bannerVeset: {
     backgroundColor: '#FDF4EC',
     borderLeftWidth: 4,
     borderLeftColor: colors.calendar.vesetFixed,
   },
-  icon: {
-    fontSize: 24,
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary.rosePale,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textBlock: {
     flex: 1,
@@ -166,7 +180,7 @@ const styles = StyleSheet.create({
     minWidth: 44,
   },
   countBadgeTeal: {
-    backgroundColor: colors.calendar.hefsek,
+    backgroundColor: colors.calendar.mikveh,
   },
   countBadgeAlert: {
     backgroundColor: colors.calendar.vesetFixed,

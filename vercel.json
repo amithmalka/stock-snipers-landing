@@ -1,0 +1,60 @@
+{
+  "buildCommand": "npx expo export -p web && node scripts/patch-html.js",
+  "outputDirectory": "dist",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/public-availability",
+      "destination": "https://siel-backoffice.vercel.app/api/public-availability"
+    },
+    {
+      "source": "/api/public-services",
+      "destination": "https://siel-backoffice.vercel.app/api/public-services"
+    },
+    {
+      "source": "/api/public-my-appointments",
+      "destination": "https://siel-backoffice.vercel.app/api/public-my-appointments"
+    },
+    {
+      "source": "/api/public-rabbis",
+      "destination": "https://siel-backoffice.vercel.app/api/public-rabbis"
+    },
+    {
+      "source": "/api/public-forum-replies",
+      "destination": "https://siel-backoffice.vercel.app/api/public-forum-replies"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/_expo/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/:file(.+\\.(?:png|jpg|jpeg|svg|webp|ico|gif|woff|woff2|ttf|otf))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}

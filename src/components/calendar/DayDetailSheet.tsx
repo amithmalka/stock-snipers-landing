@@ -40,6 +40,7 @@ interface DayDetailSheetProps {
   isCycleStart: boolean;
   onClose: () => void;
   onLogCycle?: () => void;
+  onLogHefsek?: () => void;
 }
 
 export const DayDetailSheet: React.FC<DayDetailSheetProps> = ({
@@ -51,6 +52,7 @@ export const DayDetailSheet: React.FC<DayDetailSheetProps> = ({
   isCycleStart,
   onClose,
   onLogCycle,
+  onLogHefsek,
 }) => {
   if (!date) return null;
 
@@ -82,7 +84,7 @@ export const DayDetailSheet: React.FC<DayDetailSheetProps> = ({
             {/* Cycle start badge */}
             {isCycleStart && (
               <View style={[styles.badge, { backgroundColor: colors.primary.roseLight }]}>
-                <Text style={styles.badgeText}>📍 תחילת וסת</Text>
+                <Text style={styles.badgeText}>תחילת וסת</Text>
               </View>
             )}
 
@@ -138,7 +140,12 @@ export const DayDetailSheet: React.FC<DayDetailSheetProps> = ({
               <Text style={styles.emptyText}>אין אירועים מיוחדים ביום זה</Text>
             )}
 
-            {/* Log cycle button */}
+            {/* Action buttons */}
+            {onLogHefsek && (
+              <TouchableOpacity style={styles.hefsekBtn} onPress={onLogHefsek} activeOpacity={0.85}>
+                <Text style={styles.hefsekBtnText}>הפסק טהרה</Text>
+              </TouchableOpacity>
+            )}
             {onLogCycle && (
               <TouchableOpacity style={styles.logBtn} onPress={onLogCycle} activeOpacity={0.85}>
                 <Text style={styles.logBtnText}>רישום תחילת וסת ביום זה</Text>
@@ -264,6 +271,19 @@ const styles = StyleSheet.create({
     color: colors.neutral.textMuted,
     fontSize: typography.size.sm,
     marginVertical: spacing.lg,
+  },
+  hefsekBtn: {
+    backgroundColor: colors.primary.gold,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  hefsekBtnText: {
+    color: colors.neutral.white,
+    fontSize: typography.size.md,
+    fontWeight: '700',
   },
   logBtn: {
     borderWidth: 1.5,

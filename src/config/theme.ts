@@ -1,30 +1,36 @@
 export const colors = {
   primary: {
-    gold: '#D4AF37',
-    goldLight: '#E8D48B',
-    rose: '#C4A484',
-    roseLight: '#D4BFA0',
+    gold: '#C4948E',          // ורוד עתיק עדין — subtle antique pink (main accent)
+    goldLight: '#D8B5B0',     // lighter antique pink
+    goldPale: '#F0E5E3',      // pale blush parchment
+    rose: '#AD7872',          // deeper antique rose
+    roseLight: '#D4ADA9',     // soft antique rose
+    rosePale: '#EFE0DE',      // blush parchment
+    oak: '#7B4E2D',           // חום אלון — oak brown (logo color)
   },
   neutral: {
-    white: '#FFFFFF',
-    cream: '#FFF8F0',
-    beige: '#F5F0EB',
-    beigeDeep: '#E8DDD3',
-    text: '#2C2C2C',
-    textLight: '#6B6B6B',
-    textMuted: '#9B9B9B',
+    white: '#FAF8F3',         // שמנת — warm cream white
+    cream: '#F3EDE4',         // rich cream
+    beige: '#E6DDD1',         // אבן — warm stone
+    beigeDeep: '#CEC3B3',     // deep stone / dividers
+    sand: '#B9A994',          // medium stone-sand
+    text: '#2A1F17',          // deep warm dark brown
+    textLight: '#5A4535',     // warm medium brown
+    textMuted: '#9A8878',     // muted stone-brown
   },
   status: {
-    alert: '#C97B7B',
-    safe: '#7BC9A4',
-    info: '#7BA8C9',
+    alert: '#B85C5C',         // muted deep red
+    safe: '#5C9E7A',          // sage green
+    info: '#5C7EA8',          // slate blue
   },
   calendar: {
-    vesetFixed: '#C97B7B',
-    vesetNonFixed: '#E8B4B4',
-    hefsek: '#7BC9A4',
-    mikveh: '#7BA8C9',
-    clean: '#FFFFFF',
+    vesetFixed: '#B85C5C',
+    vesetNonFixed: '#D4ABAB',
+    hefsek: '#4D7A68',          // deep sage — refined, natural purity
+    mikveh: '#3D6490',          // deep sapphire — twilight water, elegant
+    clean: '#FAF8F3',
+    cleanDay: '#FBE9EA',        // light pink — 7 clean days
+    inCycle: '#F2C3C3',         // soft red-pink — active cycle, awaiting hefsek
   },
 };
 

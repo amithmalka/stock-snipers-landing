@@ -9,7 +9,9 @@ export type DayStatus =
   | 'hefsek'
   | 'mikveh'
   | 'cycle_start'
+  | 'in_cycle'
   | 'clean'
+  | 'clean_day'
   | 'today'
   | null;
 
@@ -21,6 +23,7 @@ interface CalendarDayProps {
   status: DayStatus;
   vesotOnDay: VesetDate[];
   onPress: () => void;
+  onLongPress?: () => void;
 }
 
 function getDayBackground(status: DayStatus): string {
@@ -35,11 +38,19 @@ function getDayBackground(status: DayStatus): string {
       return colors.calendar.mikveh;
     case 'cycle_start':
       return colors.primary.rose;
+    case 'in_cycle':
+      return colors.calendar.inCycle;
+    case 'clean_day':
+      return colors.calendar.cleanDay;
     case 'today':
       return colors.primary.gold;
     default:
       return 'transparent';
   }
+}
+
+function isLightStatus(status: DayStatus): boolean {
+  return status === 'clean_day' || status === 'in_cycle';
 }
 
 function getDotColor(type: VesetDate['type']): string {
@@ -65,6 +76,7 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({
   status,
   vesotOnDay,
   onPress,
+  onLongPress,
 }) => {
   const bg = getDayBackground(status);
   const hasStatus = status !== null && status !== 'clean';
@@ -73,6 +85,8 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({
     <TouchableOpacity
       style={[styles.cell, hasStatus && { backgroundColor: bg }]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={500}
       activeOpacity={0.7}
     >
       {isToday && !hasStatus && <View style={styles.todayRing} />}
@@ -81,12 +95,16 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({
           styles.dayNum,
           !isCurrentMonth && styles.otherMonth,
           isToday && !hasStatus && styles.todayText,
-          hasStatus && styles.statusText,
+          hasStatus && !isLightStatus(status) && styles.statusText,
         ]}
       >
         {day}
       </Text>
-      <Text style={[styles.hebrewDay, !isCurrentMonth && styles.otherMonth]}>
+      <Text style={[
+        styles.hebrewDay,
+        !isCurrentMonth && styles.otherMonth,
+        hasStatus && !isLightStatus(status) && styles.statusTextLight,
+      ]}>
         {hebrewDay}
       </Text>
       {vesotOnDay.length > 0 && (
@@ -144,6 +162,9 @@ const styles = StyleSheet.create({
   statusText: {
     color: colors.neutral.white,
     fontWeight: '600',
+  },
+  statusTextLight: {
+    color: 'rgba(255,255,255,0.85)',
   },
   dots: {
     flexDirection: 'row',

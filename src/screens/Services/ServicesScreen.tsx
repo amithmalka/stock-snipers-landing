@@ -9,20 +9,12 @@ import * as Location from 'expo-location';
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
 import { ServiceProvider } from '../../types/models';
 import { searchProviders, fetchProviderServices, ProviderService } from '../../services/supabase/servicesService';
-import { fetchSlotsForDate, createAppointment, TimeSlot } from '../../services/supabase/bookingService';
+import { fetchSlotsForDateDetailed, createAppointment, TimeSlot, SlotsResult } from '../../services/supabase/bookingService';
 import { isSupabaseConfigured } from '../../config/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
-
-// Web: Feather TTF doesn't render reliably in browsers — use emoji fallbacks
-const WEB_ICON_MAP: Record<string, string> = {
-  search: '🔍', x: '✕', heart: '🤍', 'map-pin': '📍',
-  'chevron-left': '›', calendar: '📅', phone: '📞', home: '🏠', navigation: '🧭',
-};
+import { useAuth } from '../../hooks/useAuth';
 
 function Icon({ name, size, color, style }: { name: string; size: number; color?: string; style?: object }) {
-  if (Platform.OS === 'web') {
-    return <Text style={[{ fontSize: size * 0.9, lineHeight: size * 1.3, color }, style]}>{WEB_ICON_MAP[name] ?? '•'}</Text>;
-  }
   return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
 }
 
@@ -64,6 +56,7 @@ const CATEGORIES = [
 
 function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClose: () => void }) {
   const { t, lang } = useLanguage();
+  const { user, updateProfile } = useAuth();
   const locale = lang === 'he' ? 'he-IL' : 'en-US';
   const days = nextDays(14);
   const [services, setServices] = useState<ProviderService[]>([]);
@@ -71,10 +64,15 @@ function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClos
   const [selectedService, setSelectedService] = useState<ProviderService | null>(null);
   const [selectedDate, setSelectedDate] = useState(days[0]);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [slotsReason, setSlotsReason] = useState<SlotsResult['reason']>('ok');
+  const [slotsErrorDetail, setSlotsErrorDetail] = useState<string>('');
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [booking, setBooking] = useState(false);
   const [done, setDone] = useState(false);
+  const [showPhoneGate, setShowPhoneGate] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneSaving, setPhoneSaving] = useState(false);
 
   useEffect(() => {
     fetchProviderServices(provider.id)
@@ -85,15 +83,42 @@ function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClos
 
   useEffect(() => {
     if (!selectedService) return;
+    let cancelled = false;
     setSelectedSlot(null);
     setLoadingSlots(true);
-    fetchSlotsForDate(provider.id, selectedDate)
-      .then(setSlots)
-      .catch(() => setSlots([]))
-      .finally(() => setLoadingSlots(false));
+    // Hard safety: never let spinner spin more than 7s. fetchSlots now
+    // races API + Supabase in parallel with 5.5s hard ceiling on each.
+    const safety = setTimeout(() => {
+      if (cancelled) return;
+      setLoadingSlots(false);
+      setSlots([]);
+      setSlotsReason('error');
+      setSlotsErrorDetail('safety-timeout-7s');
+    }, 7000);
+    fetchSlotsForDateDetailed(provider.id, selectedDate, selectedService.duration_minutes)
+      .then((r) => {
+        if (cancelled) return;
+        setSlots(r.slots);
+        setSlotsReason(r.reason);
+        setSlotsErrorDetail(r.errorDetail ?? '');
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setSlots([]);
+        setSlotsReason('error');
+        setSlotsErrorDetail(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        clearTimeout(safety);
+        if (!cancelled) setLoadingSlots(false);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(safety);
+    };
   }, [selectedDate, provider.id, selectedService]);
 
-  async function confirmBooking() {
+  async function performBooking() {
     if (!selectedSlot || !selectedService) return;
     setBooking(true);
     try {
@@ -103,6 +128,34 @@ function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClos
       Alert.alert(t.error, e instanceof Error ? e.message : t.tryAgain);
     } finally {
       setBooking(false);
+    }
+  }
+
+  function confirmBooking() {
+    if (!selectedSlot || !selectedService) return;
+    if (!user?.phone || user.phone.trim().length < 9) {
+      setPhoneInput(user?.phone ?? '');
+      setShowPhoneGate(true);
+      return;
+    }
+    performBooking();
+  }
+
+  async function handleSavePhoneAndBook() {
+    const clean = phoneInput.trim();
+    if (clean.replace(/[^0-9]/g, '').length < 9) {
+      Alert.alert(t.error, t.invalidPhone);
+      return;
+    }
+    setPhoneSaving(true);
+    try {
+      await updateProfile({ phone: clean });
+      setShowPhoneGate(false);
+      await performBooking();
+    } catch (e: unknown) {
+      Alert.alert(t.error, e instanceof Error ? e.message : t.tryAgain);
+    } finally {
+      setPhoneSaving(false);
     }
   }
 
@@ -174,26 +227,69 @@ function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClos
           {loadingSlots ? (
             <ActivityIndicator color={colors.primary.rose} style={{ marginVertical: 16 }} />
           ) : slots.length === 0 ? (
-            <Text style={bookStyles.noSlots}>{t.noAvailability}</Text>
-          ) : (
-            <View style={bookStyles.slotsGrid}>
-              {slots.map((s) => {
-                const sel = selectedSlot?.start === s.start;
+            <Text style={bookStyles.noSlots}>
+              {slotsReason === 'no_hours_at_all'
+                ? 'בעלת העסק עדיין לא הגדירה שעות זמינות. נסי לפנות אליה ישירות.'
+                : slotsReason === 'no_hours_this_day'
+                  ? 'אין שעות זמינות ביום זה. נסי יום אחר.'
+                  : slotsReason === 'date_blocked'
+                    ? 'התאריך הזה חסום (חופשה / חג). נסי תאריך אחר.'
+                    : slotsReason === 'error'
+                      ? `הטעינה לוקחת זמן רב. בדקי חיבור לאינטרנט ונסי שוב.\n(${slotsErrorDetail || 'unknown'})`
+                      : t.noAvailability}
+            </Text>
+          ) : (() => {
+              const available = slots.filter((s) => !s.booked);
+              const bookedCount = slots.length - available.length;
+              if (available.length === 0) {
                 return (
-                  <TouchableOpacity
-                    key={s.start}
-                    disabled={s.booked}
-                    onPress={() => setSelectedSlot(s)}
-                    style={[bookStyles.slotChip, s.booked && bookStyles.slotBooked, sel && bookStyles.slotSel]}
-                  >
-                    <Text style={[bookStyles.slotText, s.booked && bookStyles.slotBookedText, sel && bookStyles.slotSelText]}>
-                      {s.start}
-                    </Text>
-                  </TouchableOpacity>
+                  <Text style={bookStyles.noSlots}>
+                    כל השעות ביום זה כבר תפוסות ({bookedCount}). נסי יום אחר.
+                  </Text>
                 );
-              })}
-            </View>
-          )}
+              }
+              const morning = available.filter((s) => Number(s.start.slice(0, 2)) < 12);
+              const afternoon = available.filter((s) => {
+                const h = Number(s.start.slice(0, 2));
+                return h >= 12 && h < 17;
+              });
+              const evening = available.filter((s) => Number(s.start.slice(0, 2)) >= 17);
+              const groups: { label: string; items: TimeSlot[] }[] = [];
+              if (morning.length) groups.push({ label: 'בוקר', items: morning });
+              if (afternoon.length) groups.push({ label: 'צהריים', items: afternoon });
+              if (evening.length) groups.push({ label: 'ערב', items: evening });
+              return (
+                <View>
+                  {groups.map((g) => (
+                    <View key={g.label} style={{ marginBottom: spacing.md }}>
+                      <Text style={bookStyles.slotsGroupLabel}>{g.label}</Text>
+                      <View style={bookStyles.slotsGrid}>
+                        {g.items.map((s) => {
+                          const sel = selectedSlot?.start === s.start;
+                          return (
+                            <TouchableOpacity
+                              key={s.start}
+                              onPress={() => setSelectedSlot(s)}
+                              style={[bookStyles.slotChip, sel && bookStyles.slotSel]}
+                            >
+                              <Text style={[bookStyles.slotText, sel && bookStyles.slotSelText]}>
+                                {s.start}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
+                  {bookedCount > 0 && (
+                    <Text style={bookStyles.bookedNote}>
+                      {bookedCount} שעות נוספות כבר תפוסות
+                    </Text>
+                  )}
+                </View>
+              );
+            })()
+          }
 
           <TouchableOpacity
             style={[bookStyles.confirmBtn, (!selectedSlot || booking) && bookStyles.confirmBtnDisabled]}
@@ -210,6 +306,48 @@ function BookingSheet({ provider, onClose }: { provider: ServiceProvider; onClos
           </TouchableOpacity>
         </>
       )}
+
+      <Modal
+        visible={showPhoneGate}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPhoneGate(false)}
+      >
+        <View style={bookStyles.modalOverlay}>
+          <View style={bookStyles.phoneGateCard}>
+            <Text style={bookStyles.phoneGateTitle}>{t.phoneRequiredTitle}</Text>
+            <Text style={bookStyles.phoneGateDesc}>{t.phoneRequiredDesc}</Text>
+            <TextInput
+              style={bookStyles.phoneGateInput}
+              placeholder="050-1234567"
+              placeholderTextColor={colors.neutral.textMuted}
+              value={phoneInput}
+              onChangeText={setPhoneInput}
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+              textAlign="left"
+              maxLength={15}
+              autoFocus
+            />
+            <TouchableOpacity
+              style={bookStyles.phoneGateBtn}
+              onPress={handleSavePhoneAndBook}
+              disabled={phoneSaving}
+              activeOpacity={0.85}
+            >
+              {phoneSaving ? (
+                <ActivityIndicator color={colors.neutral.white} />
+              ) : (
+                <Text style={bookStyles.phoneGateBtnText}>{t.savePhoneAndBook}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPhoneGate(false)}>
+              <Text style={bookStyles.phoneGateCancel}>{t.cancel}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -312,7 +450,17 @@ export default function ServicesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [providers, setProviders] = useState<ServiceProvider[]>([]);
+  const PROVIDERS_CACHE_KEY = 'siel.providers.cache';
+  const cachedProviders: ServiceProvider[] = (() => {
+    try {
+      if (typeof window === 'undefined' || !window.localStorage) return [];
+      const raw = window.localStorage.getItem(PROVIDERS_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  })();
+  const [providers, setProviders] = useState<ServiceProvider[]>(cachedProviders);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
 
@@ -327,7 +475,10 @@ export default function ServicesScreen() {
 
   const runSearch = useCallback(async (q: string, cat: string | null, loc: typeof userLocation) => {
     if (!isSupabaseConfigured) return;
-    setIsLoading(true);
+    // Only show spinner if we have NO cached providers — otherwise update
+    // silently in background.
+    if (providers.length === 0) setIsLoading(true);
+    const safety = setTimeout(() => setIsLoading(false), 7000);
     try {
       const combined = [q.trim(), cat].filter(Boolean).join(' ');
       const results = await searchProviders(combined);
@@ -336,9 +487,22 @@ export default function ServicesScreen() {
         distanceKm: loc && p.latitude !== 0 ? haversineKm(loc.lat, loc.lon, p.latitude, p.longitude) : undefined,
       }));
       if (loc) withDistance.sort((a, b) => (a.distanceKm ?? 99) - (b.distanceKm ?? 99));
-      setProviders(withDistance.length > 0 ? withDistance : []);
-    } catch { } finally { setIsLoading(false); }
-  }, []);
+      if (withDistance.length > 0) {
+        setProviders(withDistance);
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(PROVIDERS_CACHE_KEY, JSON.stringify(withDistance));
+          }
+        } catch {}
+      } else if (q || cat) {
+        // empty search results — only reflect this for filtered queries
+        setProviders([]);
+      }
+    } catch { } finally {
+      clearTimeout(safety);
+      setIsLoading(false);
+    }
+  }, [providers.length]);
 
   useEffect(() => { runSearch(searchQuery, selectedCategory, userLocation); }, [userLocation]); // eslint-disable-line
   useEffect(() => {
@@ -347,7 +511,7 @@ export default function ServicesScreen() {
   }, [searchQuery, selectedCategory]); // eslint-disable-line
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.title}>{t.servicesTitle}</Text>
         <Text style={styles.subtitle}>{t.servicesSubtitle}</Text>
@@ -402,6 +566,18 @@ export default function ServicesScreen() {
             ? <ActivityIndicator color={colors.primary.gold} style={{ marginTop: spacing.xl }} />
             : <Text style={styles.empty}>{searchQuery.length > 0 ? `אין שירותים זמינים ב${searchQuery}` : t.noResults}</Text>
         }
+        ListFooterComponent={
+          <TouchableOpacity
+            style={styles.proCta}
+            onPress={() => Linking.openURL('https://siel-backoffice.vercel.app/login?signup=1')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.proCtaText}>
+              גם את בתחום היופי?
+              <Text style={styles.proCtaLink}> הירשמי כבעלת עסק ←</Text>
+            </Text>
+          </TouchableOpacity>
+        }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} onPress={() => setSelectedProvider(item)} activeOpacity={0.8}>
             <View style={styles.cardAvatar}>
@@ -432,7 +608,7 @@ export default function ServicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral.beige },
+  container: { flex: 1, backgroundColor: colors.neutral.cream },
   header: { padding: spacing.lg, paddingBottom: spacing.sm },
   title: { fontSize: typography.size.xxl, fontWeight: '700', color: colors.neutral.text },
   subtitle: { fontSize: typography.size.sm, color: colors.neutral.textLight, marginTop: 4 },
@@ -444,9 +620,9 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: spacing.md, fontSize: typography.size.md, color: colors.neutral.text },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
   card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.neutral.white,
-    borderRadius: borderRadius.lg, padding: spacing.md, gap: spacing.md,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF',
+    borderRadius: 20, padding: spacing.md, gap: spacing.md,
+    shadowColor: '#A87872', shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 10 }, elevation: 10,
   },
   cardAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primary.rosePale, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   cardAvatarImg: { width: 50, height: 50, borderRadius: 25 },
@@ -456,6 +632,20 @@ const styles = StyleSheet.create({
   cardCity: { fontSize: typography.size.xs, color: colors.neutral.textMuted },
   cardDist: { fontSize: typography.size.xs, color: colors.neutral.textMuted, fontWeight: '600' },
   empty: { textAlign: 'center', color: colors.neutral.textMuted, padding: spacing.xl },
+  proCta: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  proCtaText: {
+    fontSize: typography.size.xs,
+    color: colors.neutral.textMuted,
+    textAlign: 'center',
+  },
+  proCtaLink: {
+    color: colors.primary.rose,
+    fontWeight: '600',
+  },
   categoryScroll: { flexGrow: 0, marginBottom: spacing.sm },
   categoryContent: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   categoryChip: {
@@ -507,8 +697,10 @@ const bookStyles = StyleSheet.create({
   dayMon: { fontSize: 10, color: colors.neutral.textMuted },
   dayTextSel: { color: colors.neutral.white },
   noSlots: { color: colors.neutral.textMuted, textAlign: 'center', paddingVertical: spacing.lg, fontSize: typography.size.sm },
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  slotChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.neutral.white, borderWidth: 1, borderColor: colors.neutral.beige },
+  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  slotsGroupLabel: { fontSize: typography.size.sm, fontWeight: '700', color: colors.neutral.text, marginBottom: spacing.sm },
+  bookedNote: { fontSize: 11, color: colors.neutral.textMuted, textAlign: 'center', marginTop: spacing.sm, fontStyle: 'italic' },
+  slotChip: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.neutral.white, borderWidth: 1.5, borderColor: colors.primary.rose, minWidth: 70, alignItems: 'center' },
   slotBooked: { backgroundColor: colors.neutral.beige, borderColor: colors.neutral.beige },
   slotSel: { backgroundColor: colors.primary.rose, borderColor: colors.primary.rose },
   slotText: { fontSize: typography.size.sm, color: colors.neutral.text, fontWeight: '600' },
@@ -533,4 +725,21 @@ const bookStyles = StyleSheet.create({
   doneSub: { fontSize: typography.size.sm, color: colors.neutral.textMuted, marginBottom: spacing.xl },
   closeBtn: { backgroundColor: colors.primary.rose, borderRadius: borderRadius.full, paddingHorizontal: 32, paddingVertical: spacing.md },
   closeBtnText: { color: colors.neutral.white, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  phoneGateCard: { backgroundColor: colors.neutral.white, borderRadius: borderRadius.lg, padding: spacing.xl, width: '100%', maxWidth: 380, alignItems: 'stretch' },
+  phoneGateTitle: { fontSize: typography.size.lg, fontWeight: '800', color: colors.neutral.text, textAlign: 'right', marginBottom: spacing.xs },
+  phoneGateDesc: { fontSize: typography.size.sm, color: colors.neutral.textMuted, textAlign: 'right', marginBottom: spacing.lg, lineHeight: 20 },
+  phoneGateInput: {
+    fontSize: typography.size.md, color: colors.neutral.text,
+    backgroundColor: colors.neutral.beige, borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  phoneGateBtn: {
+    backgroundColor: colors.primary.gold, borderRadius: borderRadius.md,
+    paddingVertical: spacing.md, alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  phoneGateBtnText: { color: colors.neutral.white, fontWeight: '700', fontSize: typography.size.md },
+  phoneGateCancel: { textAlign: 'center', color: colors.neutral.textMuted, fontSize: typography.size.sm, paddingVertical: spacing.sm },
 });

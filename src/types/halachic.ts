@@ -8,6 +8,7 @@ export interface CycleEntry {
   startDate: string;
   hebrewDate: string;
   onah: Onah;
+  hefsekDate?: string;   // recorded by user tapping "+ הפסק טהרה"
   createdAt: string;
 }
 
@@ -22,6 +23,7 @@ export interface CalculationInput {
   startDate: string;
   hebrewDate: string;
   onah: Onah;
+  hefsekDate?: string;   // if set, overrides the auto-calculated day-5 hefsek
   latitude: number;
   longitude: number;
   profile: HalachicProfile;
@@ -30,8 +32,8 @@ export interface CalculationInput {
 
 export interface CalculationResult {
   vesetDates: VesetDate[];
-  hefsekTaharahDate: string;
-  mikvehNight: string;
+  hefsekTaharahDate: string | undefined;  // undefined until user records it
+  mikvehNight: string | undefined;        // undefined until hefsek is recorded
   alerts: ProactiveAlert[];
 }
 

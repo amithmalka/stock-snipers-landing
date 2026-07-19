@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <title>MGS | Money Growth System - קורס השקעות מקיף מאפס לחופש כלכלי</title>
+  <meta name="description" content="קורס MGS - Money Growth System ילמד אתכם לבנות תיק השקעות רווחי, להפיק הכנסה פאסיבית משוק ההון ולהגיע לחופש כלכלי." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #F5E6A3;
+      --gold-dark: #B8941F;
+      --surface: #050505;
+      --surface-2: #0A0A0A;
+      --surface-3: #0F0F0F;
+      --surface-4: #171717;
+      --surface-5: #1F1F1F;
+      --text: #F0F0F0;
+      --text-muted: #9A9A9A;
+      --text-dim: #555;
+      --success: #34D399;
+      --danger: #F87171;
+      --radius: 22px;
+    }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Rubik', 'Heebo', system-ui, sans-serif;
+      background: #040405;
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── 3D background canvas + veils ──────────────────────────────── */
+    #bg3d {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: -2;
+      pointer-events: none;
+      display: block;
+    }
+    /* readability veil + subtle aurora over the WebGL scene */
+    .veil {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% -10%, rgba(212,175,55,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 110%, rgba(212,175,55,0.06) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(4,4,5,0.35) 0%, rgba(4,4,5,0.55) 100%);
+    }
+    /* faint scanline / grain for a futuristic feel */
+    .veil::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px);
+      opacity: 0.4; mix-blend-mode: overlay;
+    }
+
+    /* ── Section tints (translucent so depth shows through) ─────────── */
+    .hero-bg { background: transparent; }
+    .section-dark    { background: linear-gradient(180deg, rgba(8,8,11,0.55), rgba(6,6,9,0.72)); }
+    .section-darker  { background: linear-gradient(180deg, rgba(5,5,8,0.62), rgba(4,4,6,0.78)); }
+    .gold-gradient-bg {
+      background:
+        radial-gradient(ellipse at 25% 40%, rgba(212,175,55,0.08) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(8,7,5,0.55), rgba(6,5,4,0.72));
+    }
+    section { position: relative; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+
+    /* ── Typography ────────────────────────────────────────────────── */
+    h1, h2, h3, h4 { font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+    .text-gold { color: var(--gold); }
+    .text-muted { color: var(--text-muted); }
+
+    .gold-text {
+      background: linear-gradient(135deg, #B8941F 0%, #D4AF37 30%, #F5E6A3 50%, #D4AF37 70%, #B8941F 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    .gold-shimmer {
+      background: linear-gradient(90deg, #B8941F 0%, #D4AF37 20%, #F5E6A3 40%, #D4AF37 60%, #B8941F 80%, #D4AF37 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: shimmer 4s ease-in-out infinite;
+      text-shadow: 0 0 40px rgba(212,175,55,0.25);
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────── */
+    .container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; }
+    section { padding: 6rem 0; }
+
+    .section-header { text-align: center; max-width: 760px; margin: 0 auto 3.5rem; }
+    .section-header h2 { font-size: clamp(1.6rem, 4.5vw, 2.7rem); margin-bottom: 1rem; }
+    .section-header p { color: var(--text-muted); font-size: clamp(0.98rem, 2.2vw, 1.12rem); }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
+      color: var(--gold);
+      background: rgba(212,175,55,0.08);
+      border: 1px solid rgba(212,175,55,0.22);
+      padding: 0.4rem 1rem; border-radius: 100px; margin-bottom: 1.25rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 24px rgba(212,175,55,0.07);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+    /* ── Navigation ────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(6,6,8,0.55);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(212,175,55,0.10);
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.25rem; max-width: 1180px; margin: 0 auto; }
+    .nav-logo { display: flex; align-items: baseline; }
+    .nav-logo .gold-text { font-weight: 900; font-size: 1.5rem; letter-spacing: 2px; }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn-gold {
+      display: inline-block;
+      background: linear-gradient(135deg, #B8941F, #D4AF37, #F5E6A3);
+      color: #0A0A0A; font-family: 'Rubik', sans-serif; font-weight: 700;
+      font-size: 1.1rem; padding: 1rem 2.4rem; border-radius: 14px;
+      border: none; cursor: pointer; text-decoration: none;
+      position: relative; overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease;
+      box-shadow: 0 10px 30px rgba(212,175,55,0.18), 0 0 0 1px rgba(245,230,163,0.2) inset;
+      animation: pulseGlow 3.2s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%,100% { box-shadow: 0 10px 30px rgba(212,175,55,0.18), 0 0 0 1px rgba(245,230,163,0.2) inset; }
+      50%     { box-shadow: 0 14px 44px rgba(212,175,55,0.34), 0 0 0 1px rgba(245,230,163,0.35) inset; }
+    }
+    .btn-gold::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.35), transparent);
+      transform: translateX(-100%); transition: transform 0.6s ease;
+    }
+    .btn-gold:hover { transform: translateY(-2px) scale(1.02); }
+    .btn-gold:hover::before { transform: translateX(100%); }
+
+    .btn-outline {
+      display: inline-block; color: var(--gold);
+      background: rgba(212,175,55,0.04);
+      border: 1px solid rgba(212,175,55,0.35);
+      font-weight: 600; font-size: 1.05rem; padding: 1rem 2rem;
+      border-radius: 14px; text-decoration: none; cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+    .btn-outline:hover { background: rgba(212,175,55,0.12); border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 0 30px rgba(212,175,55,0.15); }
+
+    /* ── Cards (glass + 3D tilt) ───────────────────────────────────── */
+    .glass-card {
+      background: rgba(16,16,20,0.55);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212,175,55,0.10);
+      border-radius: var(--radius); padding: 2rem;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+      transform-style: preserve-3d; will-change: transform;
+      position: relative; overflow: hidden;
+    }
+    .glass-card::after {
+      content: ''; position: absolute; inset: 0; border-radius: var(--radius);
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 0%), rgba(212,175,55,0.12), transparent 45%);
+      opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+    }
+    .glass-card:hover {
+      border-color: rgba(212,175,55,0.30);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(212,175,55,0.10);
+    }
+    .glass-card:hover::after { opacity: 1; }
+
+    .feature-card .feature-icon, .comparison-card .icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; filter: drop-shadow(0 0 14px rgba(212,175,55,0.25)); }
+    .feature-card h4 { font-size: 1.15rem; margin-bottom: 0.6rem; }
+    .feature-card p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .comparison-card { text-align: center; }
+    .comparison-card h4 { font-size: 1.2rem; margin-bottom: 0.8rem; }
+    .comparison-card .amount { font-size: 2rem; font-weight: 900; margin-bottom: 1rem; }
+    .comparison-card .details { font-size: 0.9rem; color: var(--text-muted); line-height: 2; }
+
+    .testimonial-card p { font-size: 0.98rem; color: var(--text); margin-bottom: 1.2rem; font-style: italic; }
+    .testimonial-card .author { font-weight: 700; color: var(--gold); }
+    .testimonial-card .role { font-size: 0.82rem; color: var(--text-dim); }
+
+    /* ── Hero ──────────────────────────────────────────────────────── */
+    .hero { min-height: 92vh; display: flex; align-items: center; text-align: center; padding-top: 4rem; padding-bottom: 4rem; }
+    .hero .container { perspective: 1000px; }
+    .hero h1 {
+      font-size: clamp(2.3rem, 7.5vw, 4.6rem); font-weight: 900; line-height: 1.12;
+      margin: 1.25rem 0 1.5rem; letter-spacing: -0.02em;
+      animation: floatIn 1s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .hero .subtitle { max-width: 680px; margin: 0 auto 2rem; color: var(--text-muted); font-size: clamp(1rem, 2.5vw, 1.18rem); }
+    .hero .subtitle strong { color: var(--text); }
+    @keyframes floatIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── Simulation highlighted card ───────────────────────────────── */
+    /* ── Pricing ───────────────────────────────────────────────────── */
+    .price-card { text-align: center; border-color: rgba(212,175,55,0.25); box-shadow: 0 0 60px rgba(212,175,55,0.08); }
+    .price-original { font-size: 1.4rem; color: var(--text-dim); text-decoration: line-through; }
+    .price-tag { font-size: 3.4rem; font-weight: 900; line-height: 1; }
+
+    /* ── FAQ ───────────────────────────────────────────────────────── */
+    .faq-item { background: rgba(16,16,20,0.5); border: 1px solid rgba(212,175,55,0.10); border-radius: 14px; margin-bottom: 0.9rem; overflow: hidden; backdrop-filter: blur(10px); }
+    .faq-item summary { cursor: pointer; padding: 1.15rem 1.4rem; font-weight: 600; list-style: none; position: relative; transition: color 0.3s ease; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after { content: '+'; position: absolute; left: 1.4rem; color: var(--gold); font-size: 1.4rem; transition: transform 0.3s ease; }
+    .faq-item[open] summary::after { transform: rotate(45deg); }
+    .faq-item summary:hover { color: var(--gold); }
+    .faq-answer { padding: 0 1.4rem 1.3rem; color: var(--text-muted); font-size: 0.95rem; }
+
+    /* ── Footer + terms ────────────────────────────────────────────── */
+    footer { padding: 3rem 0; text-align: center; color: var(--text-muted); font-size: 0.9rem; background: rgba(4,4,6,0.8); border-top: 1px solid rgba(212,175,55,0.08); }
+
+    /* ── Sticky CTA ────────────────────────────────────────────────── */
+    .sticky-cta {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 0.8rem 1.25rem;
+      background: rgba(6,6,8,0.82); backdrop-filter: blur(18px);
+      border-top: 1px solid rgba(212,175,55,0.18);
+      transform: translateY(120%); transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sticky-cta.visible { transform: translateY(0); }
+    .sticky-cta .btn-gold { font-size: 0.95rem; padding: 0.7rem 1.6rem; animation: none; }
+    .price-mini { font-weight: 800; font-size: 1.1rem; white-space: nowrap; }
+
+    /* ── Scroll reveal (with subtle 3D) ────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(40px) rotateX(6deg); transform-origin: center top; transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0) rotateX(0); }
+
+    /* ── Responsive / mobile ───────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      section { padding: 4rem 0; }
+      .section-header { margin-bottom: 2.5rem; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; gap: 1rem; }
+      .glass-card { padding: 1.5rem; }
+      .hero { min-height: 88vh; }
+      .btn-gold, .btn-outline { width: 100%; text-align: center; }
+      .nav-logo .gold-text { font-size: 1.25rem; }
+      .nav-inner .btn-gold { width: auto; font-size: 0.8rem; padding: 0.5rem 1.1rem; }
+      .price-tag { font-size: 2.8rem; }
+      .sticky-cta .btn-gold { width: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gold-shimmer, .btn-gold { animation: none; }
+      .reveal { transition: opacity 0.4s ease; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3D futuristic background -->
+  <canvas id="bg3d"></canvas>
+  <div class="veil"></div>
+
+  <!-- ══════════════════════════ NAV ══════════════════════════ -->
+  <nav>
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <span class="gold-text">MGS</span>
+        <span style="font-weight: 400; font-size: 0.8rem; color: var(--text-muted); margin-right: 0.5rem;">MONEY GROWTH SYSTEM</span>
+      </div>
+      <a href="#join" class="btn-gold" style="font-size: 0.85rem; padding: 0.55rem 1.4rem; border-radius: 10px;">הצטרפו עכשיו</a>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════ HERO ══════════════════════════ -->
+  <section class="hero hero-bg">
+    <div class="container">
+      <div class="badge">הקורס שמשנה את חוקי המשחק</div>
+      <h1>
+        בעוד 10 שנים,<br/>
+        <span class="gold-shimmer">משכורת חודשית</span><br/>
+        בלי לעבוד יום אחד.
+      </h1>
+      <p class="subtitle">
+        קורס <strong>MGS — Money Growth System</strong> ילמד אתכם מאפס — איך לפתוח חשבון השקעות, לבנות תיק חכם עם השיטה הייחודית שלנו, ולהגיע להכנסה פאסיבית חודשית משוק ההון. בלי ניסיון קודם. בלי ידע מוקדם. עם השקעה מינימלית בלבד.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="#join" class="btn-gold">אנחנו רוצים להתחיל להשקיע</a>
+        <a href="#simulation" class="btn-outline">ראו את המספרים</a>
+      </div>
+      <p style="margin-top: 1.5rem; font-size: 0.82rem; color: var(--text-dim);">
+        גישה מיידית &nbsp;&middot;&nbsp; נציג אישי &nbsp;&middot;&nbsp; השקעה מינימלית &nbsp;&middot;&nbsp; אחריות מלאה
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ PROBLEM ══════════════════════════ -->
+  <section class="section-dark">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2>רוב האנשים עובדים בשביל הכסף.<br/><span class="text-gold">הגיע הזמן שהכסף יעבוד בשבילך.</span></h2>
+      </div>
+      <div class="grid-3">
+        <div class="glass-card" style="text-align: center;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">&#128188;</div>
+          <h4 style="margin-bottom: 0.5rem;">עובדים שנים</h4>
+          <p class="text-muted" style="font-size: 0.9rem;">רוב האנשים עובדים 40+ שנה ומגיעים לפנסיה עם פחות ממה שהם צריכים. אין תוכנית. אין שיטה. רק תקווה. בקורס MGS תלמדו להשקיע לבד — ותחסכו מאות אלפי שקלים של עמלות לאורך חייכם.</p>
+        </div>
+        <div class="glass-card" style="text-align: center;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">&#127968;</div>
+          <h4 style="margin-bottom: 0.5rem;">חוסכים על דירה</h4>
+          <p class="text-muted" style="font-size: 0.9rem;">שנים של חיסכון בשביל מקדמה על דירה, משכנתא ל-30 שנה, ובסוף — עדיין צריכים לעבוד כל יום כדי לשלם אותה.</p>
+        </div>
+        <div class="glass-card" style="text-align: center;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">&#128200;</div>
+          <h4 style="margin-bottom: 0.5rem;">הכסף שוכב בעו״ש</h4>
+          <p class="text-muted" style="font-size: 0.9rem;">כל יום שהכסף שלך בעו״ש — הוא מאבד ערך. אינפלציה אוכלת 2-3% בשנה. זה כמו חור בדלי.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ THE METHOD ══════════════════════════ -->
+  <section class="section-darker">
+    <div class="container reveal">
+      <div class="section-header">
+        <div class="badge">השיטה הייחודית שלנו</div>
+        <h2>לא צריך להיות גאון כדי לבנות הון.<br/>צריך <span class="text-gold">שיטה נכונה</span>.</h2>
+        <p>השיטה הייחודית שלנו בנויה על עקרונות שהמשקיעים הגדולים בעולם משתמשים בהם — אבל מותאמת לישראלים, מאפס, עם נציג אישי שמלווה אתכם צעד אחר צעד.</p>
+      </div>
+
+      <div class="grid-2" style="max-width: 900px; margin: 0 auto;">
+        <div class="glass-card feature-card">
+          <div class="feature-icon">&#127919;</div>
+          <h4>בנייה חכמה של תיק</h4>
+          <p>תלמדו לבנות תיק השקעות מגוון שמייצר תשואה גבוהה עם ניהול סיכונים חכם. לא ספקולציות — שיטה מוכחת. וכשאתם יודעים לעשות את זה לבד — אתם חוסכים מאות אלפי שקלים בעמלות ודמי ניהול.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon">&#128176;</div>
+          <h4>הכנסה פאסיבית אמיתית</h4>
+          <p>השיטה הייחודית שלנו מאפשרת לכם להגיע למצב שבו התיק שלכם מייצר הכנסה חודשית — כמו משכורת, בלי לעבוד. ממש להתפרנס משוק ההון בצורה פאסיבית.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon">&#128241;</div>
+          <h4>נציג אישי צמוד</h4>
+          <p>מקבלים נציג אישי שפותח עבורכם את תיק ההשקעות ועוזר בכל נושא טכני — מפתיחת חשבון ועד הפקדה ראשונה. לא נשארים לבד.</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon">&#128640;</div>
+          <h4>משקיעים לבד = חוסכים הון</h4>
+          <p>כשאתם יודעים להשקיע לבד, אתם לא משלמים דמי ניהול, עמלות יועצים, או אחוזים מהרווח. על תיק של מיליון שקל — זה חיסכון של עשרות אלפי שקלים בשנה.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ SIMULATION ══════════════════════════ -->
+  <section class="gold-gradient-bg" id="simulation">
+    <div class="container reveal">
+      <div class="section-header">
+        <div class="badge">המספרים מדברים</div>
+        <h2>מה השיטה שלנו יכולה <span class="text-gold">לעשות בשבילכם?</span></h2>
+        <p>סימולציה אמיתית מתוך מערכת MGS — על בסיס ממוצעים היסטוריים של שוק ההון עם השיטה הייחודית שלנו. גם עם השקעה מינימלית.</p>
+      </div>
+
+      <div class="grid-3" style="max-width: 1000px; margin: 0 auto; gap: 1.8rem;">
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">בעוד 5 שנים</div>
+          <div class="gold-text" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;525,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.3rem; font-weight: 700; color: var(--success);">&#8362;1,750 / חודש</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem; border-color: rgba(212,175,55,0.25); box-shadow: 0 0 30px rgba(212,175,55,0.06);">
+          <div style="font-size: 0.85rem; color: var(--gold); font-weight: 600; margin-bottom: 0.5rem;">בעוד 10 שנים</div>
+          <div class="gold-text" style="font-size: 2.6rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;1,450,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">&#8362;4,800 / חודש</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">בעוד 15 שנים</div>
+          <div class="gold-text" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;3,240,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.3rem; font-weight: 700; color: var(--success);">&#8362;10,800 / חודש</div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="max-width: 1000px; margin: 1.8rem auto 0; gap: 1.8rem;">
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">בעוד 20 שנים</div>
+          <div class="gold-text" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;6,720,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.3rem; font-weight: 700; color: var(--success);">&#8362;22,400 / חודש</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">בעוד 25 שנים</div>
+          <div class="gold-text" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;13,490,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.3rem; font-weight: 700; color: var(--success);">&#8362;44,970 / חודש</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 2.5rem 1.5rem;">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">בעוד 30 שנים</div>
+          <div class="gold-text" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;">&#8362;26,630,000</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.3rem;">משכורת חודשית פאסיבית:</div>
+          <div style="font-size: 1.3rem; font-weight: 700; color: var(--success);">&#8362;88,770 / חודש</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 2.5rem;">
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+          הכסף עובד בשבילך. 24 שעות ביממה. 7 ימים בשבוע. בלי לעשות כלום.
+        </p>
+        <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 1rem; line-height: 1.6;">
+          הנתונים מבוססים על תשואות היסטוריות ממוצעות ואינם מהווים הבטחה לתשואה עתידית. אין באמור ייעוץ השקעות.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ VS REAL ESTATE ══════════════════════════ -->
+  <section class="section-dark">
+    <div class="container reveal">
+      <div class="section-header">
+        <div class="badge">השוואה</div>
+        <h2>שוק ההון vs. נדל״ן — <span class="text-gold">מה באמת משתלם?</span></h2>
+        <p>כולם אומרים ״תקנו דירה״. אבל בואו נסתכל על המספרים האמיתיים.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card comparison-card">
+          <div class="icon">&#127970;</div>
+          <h4>דירה להשקעה</h4>
+          <div class="amount" style="color: var(--danger);">&#8362;1,800,000</div>
+          <div class="details">
+            הון עצמי: &#8362;450,000+<br/>
+            משכנתא: &#8362;1,350,000<br/>
+            שכ״ד: &#8362;4,000/חודש<br/>
+            החזר משכנתא: &#8362;5,500/חודש<br/>
+            <strong style="color: var(--danger);">הפסד חודשי: &#8362;1,500-</strong><br/>
+            + ארנונה, ועד בית, תיקונים, מס שבח<br/>
+            <strong>נזילות: אפסית</strong>
+          </div>
+        </div>
+        <div class="glass-card comparison-card">
+          <div class="icon">&#127968;</div>
+          <h4>דירת מגורים</h4>
+          <div class="amount" style="color: var(--text-muted);">&#8362;2,200,000</div>
+          <div class="details">
+            הון עצמי: &#8362;550,000+<br/>
+            משכנתא: &#8362;1,650,000<br/>
+            החזר: &#8362;7,000/חודש<br/>
+            <strong>ל-25 שנה</strong><br/>
+            סה״כ תשלום: &#8362;2,100,000+<br/>
+            תשלום כולל: &#8362;2,650,000<br/>
+            <strong>לא מייצרת הכנסה</strong>
+          </div>
+        </div>
+        <div class="glass-card comparison-card" style="border-color: rgba(212,175,55,0.25);">
+          <div class="icon">&#128200;</div>
+          <h4 class="text-gold">שיטת MGS</h4>
+          <div class="amount gold-text">&#8362;1,450,000</div>
+          <div class="details">
+            תוך: 10 שנים<br/>
+            הכנסה פאסיבית: <strong style="color: var(--success);">&#8362;4,800/חודש</strong><br/>
+            <strong>בלי משכנתא</strong><br/>
+            בלי תיקונים ושוכרים<br/>
+            נזילות: מיידית<br/>
+            <strong class="text-gold">והתיק ממשיך לצמוח!</strong>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 2.5rem;">
+        <p style="font-size: 1.15rem; color: var(--text-muted); max-width: 700px; margin: 0 auto;">
+          עם דירה להשקעה, אתם <strong style="color: var(--text);">משלמים</strong> כל חודש ונתקעים ל-25 שנה. עם השיטה שלנו, אתם <strong class="text-gold">מקבלים</strong> כל חודש — ויכולים להפסיק מתי שתרצו.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ WHAT YOU GET ══════════════════════════ -->
+  <section class="section-darker">
+    <div class="container reveal">
+      <div class="section-header">
+        <div class="badge">מה כולל הקורס</div>
+        <h2>הכל כלול. <span class="text-gold">שום הפתעות.</span></h2>
+        <p>חבילה מלאה שתיקח אתכם מאפס מוחלט עד תיק השקעות פעיל ורווחי — עם השקעה מינימלית בלבד.</p>
+      </div>
+
+      <div class="grid-2" style="max-width: 900px; margin: 0 auto;">
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#127891;</span>
+            <h4 style="font-size: 1rem;">קורס MGS מלא מ-0 עד מקצוען</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">שיעורים מוקלטים, מאורגנים בפרקים. מהבנת שוק ההון עד בניית תיק ראשון. הכל בקצב שלכם.</p>
+        </div>
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#128241;</span>
+            <h4 style="font-size: 1rem;">מערכת MGS — Money Growth System</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">מערכת מקצועית לניהול תיק — סימולציות, מעקב הקצאות, חישוב הכנסה פאסיבית, ותכנון יעדים.</p>
+        </div>
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#128202;</span>
+            <h4 style="font-size: 1rem;">השיטה הייחודית שלנו</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">שיטת ההשקעה שמאפשרת לייצר הכנסה פאסיבית חודשית — כמו משכורת מהבורסה. לא תמצאו את זה בשום קורס אחר.</p>
+        </div>
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#128737;</span>
+            <h4 style="font-size: 1rem;">נציג אישי לפתיחת חשבון</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">מקבלים נציג אישי שפותח עבורכם את חשבון המסחר, מגדיר הכל, ועוזר בכל שאלה טכנית. שום דבר לא נשאר עמום.</p>
+        </div>
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#127919;</span>
+            <h4 style="font-size: 1rem;">תכנים מעשירים על שוק ההון</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">ניתוחי שוק, הסברים על מדדים, מושגים בסיסיים ומתקדמים, טיפים לניהול סיכונים, ועוד תכנים שמתעדכנים.</p>
+        </div>
+        <div class="glass-card" style="padding: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 1.3rem;">&#128101;</span>
+            <h4 style="font-size: 1rem;">קהילה וליווי</h4>
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem;">גישה לקהילת משקיעים, מענה על שאלות, ותמיכה לאורך הדרך. אתם לא לבד.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ INCOME VISION ══════════════════════════ -->
+  <section class="gold-gradient-bg">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2>דמיינו את החיים שלכם<br/>עם <span class="gold-shimmer">משכורת חודשית</span> בלי לעבוד</h2>
+        <p>זה לא חלום. זו מתמטיקה. השיטה הייחודית שלנו עובדת — ואתם יכולים להתחיל היום.</p>
+      </div>
+
+      <div class="grid-4" style="max-width: 950px; margin: 0 auto;">
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">&#127749;</div>
+          <h4 style="font-size: 0.95rem;">לקום בבוקר<br/>בלי שעון מעורר</h4>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">&#9992;&#65039;</div>
+          <h4 style="font-size: 0.95rem;">לטוס לחו״ל<br/>כשבא לכם</h4>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">&#128104;&#8205;&#128105;&#8205;&#128103;&#8205;&#128102;</div>
+          <h4 style="font-size: 0.95rem;">לבלות זמן<br/>עם המשפחה</h4>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1.5rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">&#129495;</div>
+          <h4 style="font-size: 0.95rem;">לחיות בלי<br/>לחץ כלכלי</h4>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 3rem;">
+        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          וככל שתמשיכו — הכסף רק ממשיך לצמוח. ההכנסה הפאסיבית גדלה כל שנה — וגם כשאתם ישנים, הכסף ממשיך לעבוד.
+        </p>
+        <a href="#join" class="btn-gold">אנחנו רוצים חופש כלכלי</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ TESTIMONIALS ══════════════════════════ -->
+  <section class="section-dark">
+    <div class="container reveal">
+      <div class="section-header">
+        <div class="badge">מה אומרים המשתתפים</div>
+        <h2>אנשים אמיתיים. <span class="text-gold">תוצאות אמיתיות.</span></h2>
+      </div>
+
+      <div class="grid-3">
+        <div class="glass-card testimonial-card">
+          <p>״הייתי מפחדת מהבורסה. היום יש לי תיק של &#8362;180,000 ואני מפקידה כל חודש בביטחון מלא. השיטה פשוט עובדת.״</p>
+          <div class="author">ליאת כ.</div>
+          <div class="role">מורה, אמא ל-3</div>
+        </div>
+        <div class="glass-card testimonial-card">
+          <p>״פתחתי חשבון בתוך שעה מהשיעור הראשון. אחרי שנה הרווחתי יותר מכל תוכנית חיסכון שהיתה לי. מערכת MGS שווה זהב.״</p>
+          <div class="author">דניאל מ.</div>
+          <div class="role">מפתח תוכנה</div>
+        </div>
+        <div class="glass-card testimonial-card">
+          <p>״ההשוואה לנדל״ן פקחה לי את העיניים. הפסקתי לחלום על דירה להשקעה והתחלתי לבנות הון אמיתי.״</p>
+          <div class="author">יוסי א.</div>
+          <div class="role">עצמאי, בן 34</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ FAQ ══════════════════════════ -->
+  <section class="section-darker">
+    <div class="container reveal" style="max-width: 750px;">
+      <div class="section-header">
+        <h2>שאלות <span class="text-gold">נפוצות</span></h2>
+      </div>
+
+      <details class="faq-item">
+        <summary>אין לי שום ניסיון בהשקעות. הקורס מתאים לי?</summary>
+        <div class="faq-answer">בהחלט! קורס MGS בנוי מאפס. מתחילים מהבנת מושגי יסוד, עוברים לפתיחת חשבון צעד-אחר-צעד עם נציג אישי, ומגיעים עד לבניית תיק השקעות שלם. אתם לא צריכים שום רקע קודם.</div>
+      </details>
+      <details class="faq-item">
+        <summary>כמה כסף אנחנו צריכים כדי להתחיל להשקיע?</summary>
+        <div class="faq-answer">ההשקעה בשוק ההון היא מינימלית — אפשר להתחיל גם עם כמה מאות שקלים בחודש. העקרונות עובדים עם כל סכום. העיקר להתחיל כמה שיותר מוקדם כדי לנצל את כוח הריבית דריבית.</div>
+      </details>
+      <details class="faq-item">
+        <summary>מה זה ״הכנסה פאסיבית משוק ההון״?</summary>
+        <div class="faq-answer">השיטה הייחודית שלנו בנויה כך שבשלב מסוים — כשהתיק שלכם מספיק גדול — אתם יכולים למשוך הכנסה חודשית קבועה מהתיק בלי שהוא מתכווץ. ממש כמו משכורת, רק בלי לעבוד. זה עובד בזכות הכוח של ריבית דריבית והשיטה שלנו.</div>
+      </details>
+      <details class="faq-item">
+        <summary>זה לא מסוכן? מה אם השוק נופל?</summary>
+        <div class="faq-answer">שוק ההון יורד ועולה — זה טבעי. אבל ב-15-20 שנה, שוק ההון תמיד עלה. ב-100 השנים האחרונות, כל תקופה של 15 שנה הסתיימה ברווח. השיטה שלנו בנויה על פיזור חכם שמגן עליכם מתנודות קיצוניות.</div>
+      </details>
+      <details class="faq-item">
+        <summary>מה זה מערכת MGS?</summary>
+        <div class="faq-answer">MGS — Money Growth System — היא מערכת דיגיטלית מתקדמת שפיתחנו עבור התלמידים שלנו. היא מאפשרת לכם לנהל את התיק, לראות סימולציות של הצמיחה העתידית, לעקוב אחרי ההקצאה, ולתכנן את הדרך לחופש כלכלי. גישה מלאה כלולה בקורס.</div>
+      </details>
+      <details class="faq-item">
+        <summary>תוך כמה זמן אני אראה תוצאות?</summary>
+        <div class="faq-answer">מהרגע שאתם פותחים חשבון ומפקידים — הכסף שלכם כבר עובד. תוצאות ממשיות מתחילות להיראות אחרי שנה-שנתיים. אחרי 5 שנים תרגישו שינוי אמיתי. אחרי 10-15 שנים — חופש כלכלי.</div>
+      </details>
+      <details class="faq-item">
+        <summary>למה לשלם &#8362;10,000 על קורס?</summary>
+        <div class="faq-answer">זו לא הוצאה — זו ההשקעה הכי חכמה שתעשו. כשאתם יודעים להשקיע לבד, אתם חוסכים מאות אלפי שקלים בעמלות, דמי ניהול, ויועצים לאורך חייכם. בלי הידע הזה, אנשים מפסידים הרבה יותר — על ייעוץ שגוי, עמלות מיותרות, או פשוט על כך שהכסף יושב בעו״ש. הקורס מחזיר את עצמו תוך חודשים ספורים.</div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ PRICING ══════════════════════════ -->
+  <section class="gold-gradient-bg" id="join">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2>הצטרפו ל<span class="text-gold">MGS</span> היום</h2>
+        <p>ההשקעה הכי חכמה שתעשו — היא בידע שלכם.</p>
+      </div>
+
+      <div style="max-width: 550px; margin: 0 auto;">
+        <div class="glass-card price-card">
+          <div style="margin-bottom: 1.5rem;">
+            <div class="badge" style="margin-bottom: 1rem;">חבילה מלאה</div>
+            <div class="price-original">&#8362;14,990</div>
+            <div class="price-tag gold-text">&#8362;9,990</div>
+            <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.9rem;">תשלום חד פעמי &middot; גישה לכל החיים</p>
+          </div>
+
+          <div style="text-align: right; margin: 2rem 0; padding: 0 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>קורס MGS מלא — מאפס ועד תיק פעיל</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>גישה למערכת MGS — Money Growth System</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>השיטה הייחודית להכנסה פאסיבית</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>נציג אישי לפתיחת חשבון וליווי טכני</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>תכנים מעשירים ועדכונים שוטפים</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>גישה לקהילת המשקיעים</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>גישה לכל החיים — כולל עדכונים עתידיים</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;">
+              <span style="color: var(--success);">&#10003;</span>
+              <span>לומדים להשקיע לבד — חוסכים מאות אלפי &#8362; בעמלות</span>
+            </div>
+          </div>
+
+          <a href="#" class="btn-gold" style="width: 100%; display: block; text-align: center; font-size: 1.2rem; padding: 1.1rem;">
+            אנחנו רוצים להצטרף עכשיו
+          </a>
+
+          <p style="text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem;">
+            אפשרות לתשלומים &middot; אשראי / Bit / PayBox
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ FINAL CTA ══════════════════════════ -->
+  <section class="section-dark" style="padding: 5rem 0;">
+    <div class="container" style="text-align: center;">
+      <h2 style="font-size: clamp(1.5rem, 3vw, 2.2rem); margin-bottom: 1.5rem;">
+        יש שני סוגים של אנשים.<br/>
+        אלה ש<span class="text-gold">מתחילים היום</span> — ואלה שמתחרטים שלא התחילו.
+      </h2>
+      <p style="color: var(--text-muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto 2rem;">
+        כל יום שעובר בלי שהכסף שלכם מושקע — הוא יום של הפסד. ריבית דריבית לא מחכה. התחילו היום.
+      </p>
+      <a href="#join" class="btn-gold" style="font-size: 1.2rem; padding: 1.1rem 3rem;">הצטרפו לקורס MGS</a>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ FOOTER ══════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div style="margin-bottom: 1rem;">
+        <span class="gold-text" style="font-weight: 800; font-size: 1.2rem; letter-spacing: 1px;">MGS</span>
+        <span style="margin-right: 0.5rem;">MONEY GROWTH SYSTEM</span>
+      </div>
+      <p>&copy; 2026 MGS — Money Growth System. כל הזכויות שמורות.</p>
+      <p style="margin-top: 0.75rem;">
+        <a href="terms.html" style="color: var(--gold); text-decoration: none; border-bottom: 1px solid rgba(212,175,55,0.3); padding-bottom: 2px;">תקנון ותנאי שימוש</a>
+      </p>
+      <p style="margin-top: 0.75rem; font-size: 0.78rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+        אין באמור ייעוץ השקעות. הנתונים מבוססים על ביצועי עבר ואינם מבטיחים תשואות עתידיות. השקעה בשוק ההון כרוכה בסיכון.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ══════════════════════════ STICKY CTA ══════════════════════════ -->
+  <div class="sticky-cta" id="stickyCta">
+    <span class="price-mini"><span class="gold-text">&#8362;9,990</span> <span class="text-muted" style="font-size: 0.8rem; text-decoration: line-through;">&#8362;14,990</span></span>
+    <a href="#join" class="btn-gold">הצטרפו עכשיו</a>
+  </div>
+
+  <!-- ══════════════════════════ THREE.JS (3D background) ══════════════════════════ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- post-processing (bloom) — desktop only, fails gracefully -->
+  <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script>
+  (function () {
+    var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var canvas = document.getElementById('bg3d');
+    if (!canvas || !window.THREE) return;
+
+    var isMobile = window.innerWidth < 768;
+    var GOLD = 0xD4AF37, GOLD_LIGHT = 0xF5E6A3;
+
+    var renderer, scene, camera, composer, clock;
+    var curveGroup, comet, chartMarkers = [], globe, coinStacks;
+    var coins = [];
+    var pointer = { x: 0, y: 0 }, scrollY = 0, camZ = 18;
+
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: !isMobile, powerPreference: 'high-performance' });
+    } catch (e) { return; }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x040405, 0.018);
+
+    camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 260);
+    camera.position.set(0, 2.4, 18);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x4a360f, 1.2));
+    var key = new THREE.PointLight(0xffd87a, 2.0, 160); key.position.set(10, 16, 22); scene.add(key);
+    var rim = new THREE.PointLight(0xd4af37, 1.2, 160); rim.position.set(-16, -6, 10); scene.add(rim);
+    var corePoint = new THREE.PointLight(0xF5E6A3, 1.6, 60); corePoint.position.set(0, 3, 0); scene.add(corePoint);
+
+    // ── Portal / gateway — we fly straight through it into "another world" ─
+    function glowTexture() {
+      var cv = document.createElement('canvas'); cv.width = cv.height = 128;
+      var g = cv.getContext('2d');
+      var grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grd.addColorStop(0, 'rgba(255,248,214,0.95)');
+      grd.addColorStop(0.30, 'rgba(212,175,55,0.65)');
+      grd.addColorStop(1, 'rgba(212,175,55,0)');
+      g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(cv);
+    }
+    // ── Elegant financial growth chart ───────────────────────────────────
+    function labelSprite(text, size, color) {
+      var cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
+      var g = cv.getContext('2d');
+      g.font = '700 96px Rubik, Heebo, Arial, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.shadowColor = 'rgba(212,175,55,0.7)'; g.shadowBlur = 22;
+      g.fillStyle = color || 'rgba(245,232,184,0.98)';
+      g.fillText(text, 256, 134);
+      var tx = new THREE.CanvasTexture(cv); tx.anisotropy = 8; tx.minFilter = THREE.LinearFilter;
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, transparent: true, depthWrite: false }));
+      var s = size || 2.2; sp.scale.set(s * 2, s, 1);
+      return sp;
+    }
+    function fillGradientTexture() {
+      var cv = document.createElement('canvas'); cv.width = 4; cv.height = 256;
+      var g = cv.getContext('2d');
+      var grd = g.createLinearGradient(0, 0, 0, 256);
+      grd.addColorStop(0, 'rgba(245,230,163,0.55)');
+      grd.addColorStop(0.55, 'rgba(212,175,55,0.16)');
+      grd.addColorStop(1, 'rgba(212,175,55,0)');
+      g.fillStyle = grd; g.fillRect(0, 0, 4, 256);
+      return new THREE.CanvasTexture(cv);
+    }
+    (function makeGrowthChart() {
+      curveGroup = new THREE.Group();
+      curveGroup.position.set(0, -2, 0);
+      var glow = glowTexture();
+
+      var data = [ {y:5,v:525000}, {y:10,v:1450000}, {y:15,v:3240000}, {y:20,v:6720000}, {y:25,v:13490000}, {y:30,v:26630000} ];
+      var maxV = 26630000, W = 24, H = 12.5, ox = -W/2, oy = -H/2;
+      function px(year) { return ox + (year/30) * W; }
+      function py(val) { return oy + (val/maxV) * H; }
+      function seg(x1,y1,x2,y2,mat) { var g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([x1,y1,0,x2,y2,0]),3)); return new THREE.Line(g, mat); }
+
+      // clean baseline + a few faint horizontal guides only
+      curveGroup.add(seg(ox, oy, ox + W, oy, new THREE.LineBasicMaterial({ color: GOLD_LIGHT, transparent: true, opacity: 0.4 })));
+      var guideMat = new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.06 });
+      for (var hl = 1; hl <= 3; hl++) { var Y = oy + (hl/4) * H; curveGroup.add(seg(ox, Y, ox + W, Y, guideMat)); }
+
+      // smooth spline through the data points
+      var raw = data.map(function (d) { return new THREE.Vector3(px(d.y), py(d.v), 0); });
+      var spline = new THREE.CatmullRomCurve3(raw);
+      var SEG = 120;
+      var smooth = spline.getPoints(SEG);
+
+      // gradient area fill (gold fading down to transparent)
+      var fillVerts = [], fillUV = [];
+      for (var i = 0; i < smooth.length - 1; i++) {
+        var p0 = smooth[i], p1 = smooth[i+1];
+        var u0 = 1 - (p0.y - oy) / H, u1 = 1 - (p1.y - oy) / H;
+        fillVerts.push(p0.x,p0.y,0, p0.x,oy,0, p1.x,p1.y,0,  p1.x,p1.y,0, p0.x,oy,0, p1.x,oy,0);
+        fillUV.push(0.5,u0, 0.5,1, 0.5,u1,  0.5,u1, 0.5,1, 0.5,1);
+      }
+      var fg = new THREE.BufferGeometry();
+      fg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(fillVerts), 3));
+      fg.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(fillUV), 2));
+      curveGroup.add(new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ map: fillGradientTexture(), transparent: true, depthWrite: false, side: THREE.DoubleSide })));
+
+      // the line — tube with a gold gradient (dim → bright as it grows)
+      var tubeGeo = new THREE.TubeGeometry(spline, SEG, 0.2, 12, false);
+      var pos = tubeGeo.attributes.position, colArr = new Float32Array(pos.count * 3);
+      var cA = new THREE.Color(0xB8941F), cB = new THREE.Color(0xFFF6CF), tmp = new THREE.Color();
+      for (var k = 0; k < pos.count; k++) {
+        var nx = Math.max(0, Math.min(1, (pos.getX(k) - ox) / W));
+        tmp.copy(cA).lerp(cB, nx);
+        colArr[k*3] = tmp.r; colArr[k*3+1] = tmp.g; colArr[k*3+2] = tmp.b;
+      }
+      tubeGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+      curveGroup.add(new THREE.Mesh(tubeGeo, new THREE.MeshBasicMaterial({ vertexColors: true })));
+
+      // glowing node markers (soft halo + bright core) + year labels
+      var coreGeo = new THREE.SphereGeometry(0.26, 16, 16);
+      var coreMat = new THREE.MeshBasicMaterial({ color: 0xFFF8E0 });
+      for (var m = 0; m < data.length; m++) {
+        var X = px(data[m].y), Y = py(data[m].v);
+        var halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xFFE6A6, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+        halo.position.set(X, Y, 0); halo.scale.set(2.2, 2.2, 1); halo.userData.base = 2.2;
+        curveGroup.add(halo); chartMarkers.push(halo);
+        curveGroup.add(new THREE.Mesh(coreGeo, coreMat).translateX(X).translateY(Y));
+        var yl = labelSprite(String(data[m].y), 1.35); yl.position.set(X, oy - 1.6, 0); curveGroup.add(yl);
+      }
+      var cap = labelSprite('שנים', 1.4); cap.position.set(ox + W + 1.3, oy - 1.6, 0); curveGroup.add(cap);
+
+      // key value labels
+      var v10 = labelSprite('₪1.45M', 1.6); v10.position.set(px(10) + 2.2, py(1450000) + 1.4, 0); curveGroup.add(v10);
+      var v30 = labelSprite('₪26.6M', 2.0, 'rgba(255,246,210,1)'); v30.position.set(px(30) - 2.2, py(26630000) + 1.6, 0); curveGroup.add(v30);
+
+      // bright comet at the latest value
+      comet = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: 0xFFF6D0, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false }));
+      comet.scale.set(3.0, 3.0, 1); comet.position.set(px(30), py(26630000), 0);
+      curveGroup.add(comet);
+
+      scene.add(curveGroup);
+    })();
+
+    // ── Ascending stacks of gold coins — revealed when you scroll INTO the chart
+    (function makeCoinStacks() {
+      coinStacks = new THREE.Group();
+      coinStacks.position.set(0, 0, -34);
+      var coinGeo = new THREE.CylinderGeometry(1.15, 1.15, 0.24, 40);
+      var faceTop = new THREE.MeshStandardMaterial({ map: bitcoinTexture(), metalness: 0.6, roughness: 0.4, emissive: 0x2a2105, emissiveIntensity: 0.32 });
+      var sideM = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 1.0, roughness: 0.3, emissive: 0x3a2c08, emissiveIntensity: 0.32 });
+      var mats = [sideM, faceTop, faceTop];
+      var stacks = isMobile ? 5 : 7;
+      for (var s = 0; s < stacks; s++) {
+        var cnt = 3 + s * 2;                                  // ascending stacks = growth
+        var sx = -((stacks - 1) / 2) * 3.3 + s * 3.3;
+        for (var c = 0; c < cnt; c++) {
+          var coin = new THREE.Mesh(coinGeo, mats);
+          coin.position.set(sx + (Math.random()-0.5)*0.25, -7 + 0.25 * c + 0.12, (Math.random()-0.5)*1.2);
+          coin.rotation.y = Math.random() * Math.PI;
+          coin.rotation.x = (Math.random()-0.5) * 0.06;
+          coinStacks.add(coin);
+        }
+      }
+      scene.add(coinStacks);
+    })();
+
+    // ── Flying Bitcoin coins (₿ on the faces) ─────────────────────────────
+    function bitcoinTexture() {
+      var cv = document.createElement('canvas'); cv.width = cv.height = 160;
+      var g = cv.getContext('2d');
+      var grd = g.createRadialGradient(80, 64, 12, 80, 80, 80);
+      grd.addColorStop(0, '#FCEEAE'); grd.addColorStop(0.55, '#E0B83C'); grd.addColorStop(1, '#9A7B1E');
+      g.fillStyle = grd; g.beginPath(); g.arc(80, 80, 78, 0, Math.PI * 2); g.fill();
+      g.lineWidth = 6; g.strokeStyle = 'rgba(120,92,20,0.7)'; g.beginPath(); g.arc(80, 80, 70, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = '#5a4308'; g.font = 'bold 104px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('₿', 80, 86);
+      var tx = new THREE.CanvasTexture(cv); tx.anisotropy = 4;
+      return tx;
+    }
+    (function makeCoins() {
+      var n = isMobile ? 9 : 18;
+      var geo = new THREE.CylinderGeometry(0.85, 0.85, 0.2, 40);
+      var face = new THREE.MeshStandardMaterial({ map: bitcoinTexture(), metalness: 0.65, roughness: 0.38, emissive: 0x2a2105, emissiveIntensity: 0.35 });
+      var side = new THREE.MeshStandardMaterial({ color: 0xCBA32F, metalness: 1.0, roughness: 0.3 });
+      var mats = [side, face, face]; // cylinder groups: [side, top, bottom]
+      for (var i = 0; i < n; i++) {
+        var m = new THREE.Mesh(geo, mats);
+        m.position.set((Math.random()-0.5)*40, (Math.random()-0.5)*22, 6 - Math.random()*60);
+        m.rotation.x = Math.random()*Math.PI; m.rotation.z = Math.random()*Math.PI;
+        m.userData = { rise: 0.006 + Math.random()*0.014, spin: 0.01 + Math.random()*0.02, sway: Math.random()*Math.PI*2 };
+        coins.push(m); scene.add(m);
+      }
+    })();
+
+    // ── Distant wireframe globe ───────────────────────────────────────────
+    (function makeGlobe() {
+      var geo = new THREE.IcosahedronGeometry(8, 1);
+      var mat = new THREE.MeshBasicMaterial({ color: GOLD, wireframe: true, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false });
+      globe = new THREE.Mesh(geo, mat);
+      globe.position.set(isMobile ? 0 : -20, 10, -60);
+      scene.add(globe);
+    })();
+
+    // ── Bloom post-processing (desktop, if addons loaded) ─────────────────
+    var useBloom = false;
+    if (!isMobile && THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass) {
+      try {
+        composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+        var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.5, 0.2);
+        composer.addPass(bloom);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        useBloom = true;
+      } catch (e) { useBloom = false; }
+    }
+
+    clock = new THREE.Clock();
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+
+    window.addEventListener('pointermove', function (e) {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+    if (window.DeviceOrientationEvent && isMobile) {
+      window.addEventListener('deviceorientation', function (e) {
+        if (e.gamma == null) return;
+        pointer.x = Math.max(-1, Math.min(1, e.gamma / 30));
+        pointer.y = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+      });
+    }
+    window.addEventListener('scroll', function () { scrollY = window.scrollY || 0; }, { passive: true });
+
+    function render() { if (useBloom && composer) composer.render(); else renderer.render(scene, camera); }
+
+    function animate() {
+      if (document.hidden) { requestAnimationFrame(animate); return; }
+      var t = clock.getElapsedTime();
+
+      // scroll-driven camera journey through the tunnel
+      var maxScroll = Math.max(1, (document.body.scrollHeight - window.innerHeight));
+      var prog = Math.min(1, Math.max(0, scrollY / maxScroll));
+      var destZ = 18 - prog * 72;
+      camZ += (destZ - camZ) * 0.06;
+      camera.position.x += (pointer.x * 2.6 - camera.position.x) * 0.04;
+      camera.position.y += ((2.6 - pointer.y * 1.6) - camera.position.y) * 0.04;
+      camera.position.z = camZ;
+      camera.lookAt(pointer.x * 1.5, 1.4 - pointer.y, camZ - 14);
+
+      if (curveGroup) {
+        curveGroup.position.y = -2 + Math.sin(t * 0.5) * 0.15; // gentle float
+        for (var mk = 0; mk < chartMarkers.length; mk++) {
+          var hb = chartMarkers[mk].userData.base || 1;
+          var sc = hb * (1 + Math.sin(t * 2 + mk * 0.6) * 0.12);
+          chartMarkers[mk].scale.set(sc, sc, 1);
+        }
+        if (comet) { var cs = 3 + Math.sin(t * 3) * 0.6; comet.scale.set(cs, cs, 1); comet.material.opacity = 0.8 + Math.sin(t * 3) * 0.2; }
+      }
+      if (coinStacks) { coinStacks.rotation.y = Math.sin(t * 0.15) * 0.25; coinStacks.position.y = Math.sin(t * 0.4) * 0.2; }
+      for (var c = 0; c < coins.length; c++) {
+        var m = coins[c];
+        m.position.y += m.userData.rise; m.rotation.y += m.userData.spin;
+        m.position.x += Math.sin(t*0.5 + m.userData.sway) * 0.004;
+        if (m.position.y > 13) m.position.y = -13;
+      }
+      if (globe) { globe.rotation.y = t * 0.06; globe.rotation.x = t * 0.02; }
+
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    if (prefersReduced) { render(); }
+    else { requestAnimationFrame(animate); }
+  })();
+  </script>
+
+  <!-- ══════════════════════════ UI SCRIPTS ══════════════════════════ -->
+  <script>
+    // Scroll reveal animation
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { revealObserver.observe(el); });
+
+    // Sticky CTA — show after scrolling past hero
+    var stickyCta = document.getElementById('stickyCta');
+    var heroSection = document.querySelector('.hero');
+    var stickyObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) stickyCta.classList.add('visible');
+        else stickyCta.classList.remove('visible');
+      });
+    }, { threshold: 0 });
+    if (heroSection) stickyObserver.observe(heroSection);
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (e) {
+        var href = this.getAttribute('href');
+        if (href === '#') return;
+        var target = document.querySelector(href);
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+
+    // 3D tilt on cards (pointer devices only — skip touch for performance)
+    var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (canHover) {
+      document.querySelectorAll('.glass-card').forEach(function (card) {
+        card.addEventListener('pointermove', function (e) {
+          var r = card.getBoundingClientRect();
+          var px = (e.clientX - r.left) / r.width;
+          var py = (e.clientY - r.top) / r.height;
+          var rx = (py - 0.5) * -8;
+          var ry = (px - 0.5) * 8;
+          card.style.transform = 'perspective(900px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-4px)';
+          card.style.setProperty('--mx', (px * 100) + '%');
+          card.style.setProperty('--my', (py * 100) + '%');
+        });
+        card.addEventListener('pointerleave', function () { card.style.transform = ''; });
+      });
+    }
+  </script>
+</body>
+</html>

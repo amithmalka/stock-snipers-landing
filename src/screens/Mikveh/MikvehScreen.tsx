@@ -13,14 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
-const WEB_ICON_MAP: Record<string, string> = {
-  search: '🔍', 'map-pin': '📍', clock: '🕐', phone: '📞', navigation: '🧭', check: '✓',
-};
 function Icon({ name, size, color, style }: { name: string; size: number; color?: string; style?: object }) {
-  if (Platform.OS === 'web') {
-    return <Text style={[{ fontSize: size * 0.9, lineHeight: size * 1.3, color }, style]}>{WEB_ICON_MAP[name] ?? '•'}</Text>;
-  }
-  return <Icon name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
+  return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} style={style} />;
 }
 import { colors, typography, spacing, borderRadius } from '../../config/theme';
 import { HalachicProfile } from '../../types/halachic';
@@ -52,7 +46,7 @@ const CHECKLIST_SEPHARDI: ChecklistSection[] = [
     items: [
       { id: 's1', text: 'בדיקת עד בבוקר — הבדיקה השביעית האחרונה' },
       { id: 's2', text: 'חפיפת הראש — הרטבה מלאה, שמפו, שחרור כל קשר' },
-      { id: 's3', text: 'סירוק השיניים עד שאין קשרים (גם בגוף)' },
+      { id: 's3', text: 'סירוק השיער עד שאין קשרים (גם בגוף)' },
       { id: 's4', text: 'רחיצת כל הגוף במים חמים — קפלי עור, טבור, אוזניים' },
       { id: 's5', text: 'ניקוי שיניים ביסודיות + חוט דנטלי' },
       { id: 's6', text: 'הסרת שאריות איפור ומסקרה' },
@@ -71,7 +65,7 @@ const CHECKLIST_ASHKENAZI: ChecklistSection[] = [
     items: [
       { id: 'a1', text: 'בדיקת עד בבוקר — הבדיקה השביעית האחרונה' },
       { id: 'a2', text: 'חפיפת הראש ביסודיות — שחרור כל קשר' },
-      { id: 'a3', text: 'סירוק דק עד שאין קשר כלל בשיניים ובגוף', note: 'הרמ״א מחמיר בסירוק בשינייים דקות' },
+      { id: 'a3', text: 'סירוק דק עד שאין קשר כלל בשיער ובגוף', note: 'הרמ״א מחמיר בסירוק במסרק בעל שיניים דקות' },
       { id: 'a4', text: 'רחיצת כל הגוף במים חמים' },
       { id: 'a5', text: 'ניקוי שיניים ביסודיות + חוט דנטלי + בדיקת חניכיים' },
       { id: 'a6', text: 'הסרת שאריות איפור ומסקרה' },
@@ -137,7 +131,7 @@ export default function MikvehScreen({ halachicProfile = 'sephardi' }: MikvehScr
   const doneCount = checked.size;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>מקווה</Text>
@@ -302,7 +296,7 @@ export default function MikvehScreen({ halachicProfile = 'sephardi' }: MikvehScr
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral.beige },
+  container: { flex: 1, backgroundColor: colors.neutral.cream },
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
@@ -378,15 +372,15 @@ const styles = StyleSheet.create({
 
   // Mikveh card
   card: {
-    backgroundColor: colors.neutral.white,
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
     padding: spacing.md,
     marginBottom: spacing.md,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowColor: '#A87872',
+    shadowOpacity: 0.22,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
   cardHeader: {
     flexDirection: 'row-reverse',

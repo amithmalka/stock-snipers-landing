@@ -22,6 +22,7 @@ export interface ChatMessage {
   id: string;
   conversationId: string;
   senderId: string;
+  senderType: 'user' | 'rabbi';
   content: string;
   imageUrl?: string;
   isEncrypted: boolean;
@@ -32,6 +33,11 @@ export interface ServiceProvider {
   id: string;
   name: string;
   category: 'nail' | 'gel' | 'beauty';
+  specialty?: string;
+  city?: string;
+  address?: string;
+  bio?: string;
+  profileImageUrl?: string;
   latitude: number;
   longitude: number;
   distanceKm?: number;

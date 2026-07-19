@@ -1521,7 +1521,7 @@
         <a href="#" class="logo">
             <img src="logo-web.png" alt="Stock Snipers" class="logo-img">
         </a>
-        <a href="https://meshulam.co.il/s/eda97c69-5380-8a3b-5e29-a6aef456dd78" target="_blank" rel="noopener" class="nav-cta">הצטרפו עכשיו</a>
+        <a href="#" onclick="event.preventDefault(); openPaymentModal();" class="nav-cta">הצטרפו עכשיו</a>
     </div>
 </nav>
 
@@ -1545,7 +1545,7 @@
                 נמאס לכם לשמוע ששוק ההון זה "הימורים"? נמאס לכם לחשוב שצריך תואר בכלכלה או 12 שעות מול המסך כדי להרוויח? הגיע הזמן להכיר את האמת שמאחורי הכסף הגדול – ואת הדרך המדויקת לקחת ממנו חלק.
             </p>
             <div class="hero-actions">
-                <a href="https://meshulam.co.il/s/eda97c69-5380-8a3b-5e29-a6aef456dd78" target="_blank" rel="noopener" class="btn-primary">
+                <a href="#" onclick="event.preventDefault(); openPaymentModal();" class="btn-primary">
                     רוצה להתחיל
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 </a>
@@ -1924,18 +1924,18 @@
             <label for="termsAgree" style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 14px; line-height: 1.7; color: #fff;">
                 <input type="checkbox" id="termsAgree" style="margin-top: 4px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--green-bright); cursor: pointer;">
                 <span>
-                    קראתי, הבנתי ואני מסכים/ה במפורש ל<a onclick="event.preventDefault(); document.getElementById('termsModal').classList.add('active')" style="color: var(--green-bright); cursor: pointer; text-decoration: underline;">תקנון ולתנאי השימוש</a> במלואם, לרבות מדיניות אי-החזרים, היעדר הבטחה לתשואות והגבלת תוקף הליווי האישי ל-12 חודשים. אני מצהיר/ה כי אני בגיר/ה (מעל גיל 18) ופועל/ת מרצוני החופשי.
+                    קראתי ואני מסכים/ה ל<a onclick="event.preventDefault(); document.getElementById('termsModal').classList.add('active')" style="color: var(--green-bright); cursor: pointer; text-decoration: underline;">תנאי השימוש</a>.
                 </span>
             </label>
         </div>
         <div class="cta-buttons reveal">
-            <a href="https://meshulam.co.il/s/eda97c69-5380-8a3b-5e29-a6aef456dd78" target="_blank" rel="noopener" id="ctaPayBtn" class="btn-cta-main" style="opacity: 0.45; pointer-events: none;" aria-disabled="true">
+            <a href="#" onclick="event.preventDefault(); openPaymentModal();" id="ctaPayBtn" class="btn-cta-main" style="opacity: 0.45; pointer-events: none;" aria-disabled="true">
                 הצטרפו ל-Stock Snipers
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </a>
         </div>
         <p class="reveal" style="margin-top: 14px; font-size: 12.5px; color: var(--text-muted); line-height: 1.7; max-width: 600px; margin-left: auto; margin-right: auto;">
-            יש לסמן את האישור לתקנון כדי להמשיך לתשלום. הליווי האישי והפגישות תקפים ל-12 חודשים מיום התשלום. גישה לתכנים מוקלטים — לכל החיים. <strong style="color: #fff;">איננו יועצי השקעות. איננו מתחייבים להצלחה, לרווחים או לתוצאות כלשהן.</strong>
+            יש לסמן את האישור לתקנון כדי להמשיך לתשלום. <strong style="color: #fff;">איננו יועצי השקעות. איננו מתחייבים להצלחה, לרווחים או לתוצאות כלשהן.</strong>
         </p>
         <div class="cta-trust reveal">
             <div class="trust-item">
@@ -1969,17 +1969,11 @@
         <button class="modal-close" onclick="this.closest('.modal-overlay').classList.remove('active')">&times;</button>
         <h2>תקנון ותנאי שימוש</h2>
         <p style="text-align: center; padding: 10px 14px; background: rgba(22,199,96,0.06); border-radius: 8px; font-size: 14px; margin-bottom: 20px; color: #fff;">
-            <strong>תקנון זה תקף לכל לקוחות העסק החל מיום 1 בינואר 2024</strong><br>
-            <span style="color: var(--text-muted); font-size: 12px;">גרסה מעודכנת אחרונה: 23 במאי 2026</span>
+            <strong>תקנון זה תקף לכל לקוחות העסק החל מיום 1 בינואר 2024</strong>
         </p>
 
         <p style="background: rgba(22,199,96,0.06); border-right: 3px solid var(--green-bright); padding: 12px 14px; border-radius: 8px; margin-bottom: 16px;">
             תקנון זה מסדיר את היחסים המשפטיים בין העסק <strong style="color: #fff;">Stock Snipers — צלפים במניות</strong>, שבבעלות <strong style="color: #fff;">עמית מלכה וליאב מלכה, ח.פ 206825697</strong> (להלן: "החברה" / "אנחנו"), לבין הלקוח/ה הרוכש/ת את הקורס ו/או את שירותי הליווי (להלן: "הלקוח" / "המשתתף"). <strong style="color: var(--green-bright);">ביצוע התשלום, מכל סוג שהוא, מהווה הסכמה מלאה, מודעת ובלתי חוזרת לכל סעיפי התקנון.</strong>
-        </p>
-
-        <p style="background: rgba(240,185,11,0.10); border: 2px solid var(--gold); padding: 14px 16px; border-radius: 8px; margin-bottom: 16px; color: #fff; line-height: 1.7;">
-            ⚠️ <strong style="color: var(--gold);">לתשומת לבך — הגבלת תוקף הליווי והפגישות:</strong><br>
-            הליווי האישי, הפגישות, ההתייעצויות, התמיכה האישית והגישה לנציג האישי — <strong style="color: #fff;">תקפים לתקופה של 12 חודשים בלבד</strong>, החל מיום ביצוע התשלום בפועל. בתום 12 החודשים — שירותי הליווי והפגישות מסתיימים אוטומטית, ללא הודעה מוקדמת, ללא החזר וללא זכות הארכה (אלא בכפוף לתשלום נוסף לפי תעריף שיהיה בתוקף). הסעיף המלא — סעיף 2 להלן.
         </p>
 
         <h3>1. כללי והגדרות</h3>
@@ -2043,6 +2037,7 @@
         <p>11.1 תקנון זה <strong style="color: #fff;">תקף לכל לקוחות העסק מיום 1 בינואר 2024</strong>. כל לקוח שרכש את הקורס או את שירותי הליווי החל ממועד זה — כפוף לתקנון זה במלואו, גם אם לא חתם עליו בנפרד, וזאת מכוח הצגת התקנון באתר העסק טרם ביצוע התשלום ומכוח הסכמתו המפורשת בעת הרכישה.</p>
         <p>11.2 Stock Snipers שומרת לעצמה את הזכות לעדכן תקנון זה מעת לעת, לפי שיקול דעתה הבלעדי. הגרסה העדכנית תפורסם באתר ותחייב מיום פרסומה. על לקוחות קיימים יחולו תנאי התקנון שהיו בתוקף במועד רכישתם, אלא אם השינוי הוא לטובת הלקוח או נדרש על פי דין.</p>
         <p>11.3 גרסאות קודמות של התקנון נשמרות בארכיון אלקטרוני אצל החברה, ויהוו ראיה לכאורה לנוסח שהיה תקף במועד רכישת כל לקוח.</p>
+        <p>11.4 <strong style="color: #fff;">תקנון זה תקף ומחייב את כל לקוחות החברה אשר ביצעו תשלום — בכל אמצעי תשלום שהוא, לרבות אך לא רק: כרטיס אשראי, העברה בנקאית, Bit, PayBox, ארנקים דיגיטליים, צ'ק, מזומן וכל אמצעי תשלום אחר — בין אם הלקוח עיין בפועל בתקנון ובין אם לאו</strong>. הלקוח מוותר מראש על כל טענה לפיה לא היה מודע, לא ראה, לא קרא או לא הבין את סעיפי התקנון. מכיוון שהתקנון פורסם באופן פומבי, גלוי ונגיש באתר העסק לפני ביצוע התשלום, ומכיוון שעצם ביצוע התשלום מהווה הצהרה של הלקוח על קבלתו של התקנון — הוא מחייב ובלתי ניתן לערעור בטענה זו.</p>
 
         <h3>12. כוח עליון</h3>
         <p>החברה לא תישא באחריות לכל עיכוב, השעיה או אי-ביצוע של התחייבויותיה הנובע מנסיבות שאינן בשליטתה הסבירה — לרבות אסון טבע, מלחמה, מצב חירום מוכרז, פעולות איבה, מגפה, השבתה ממשלתית, הפסקת חשמל ארצית, תקלה רחבת היקף של ספקי תקשורת/אחסון/סליקה (כגון נופלים של AWS, Cloudflare, חברת הסליקה וכד'), שביתה כללית או שינויי רגולציה. במצב כזה, מועדי האספקה ותקופת הליווי יוארכו במשך זמן המעכב.</p>
@@ -2075,12 +2070,12 @@
             <strong style="color: #fff;">מספר עוסק / ח.פ:</strong> 206825697<br>
             <strong style="color: #fff;">דוא"ל לפניות רשמיות:</strong> support@stock-snipers.com<br>
             <strong style="color: #fff;">כתובת אתר הקורס:</strong> learn.stock-snipers.com<br>
-            <strong style="color: #fff;">תוקף התקנון:</strong> מיום 1 בינואר 2024 | <strong style="color: #fff;">עדכון אחרון:</strong> 23 במאי 2026
+            <strong style="color: #fff;">תוקף התקנון:</strong> מיום 1 בינואר 2024
         </p>
 
         <p style="margin-top: 20px; padding: 14px; border: 1px solid var(--green-bright); border-radius: 8px; background: rgba(22,199,96,0.08); text-align: center; font-size: 14px; color: #fff; line-height: 1.7;">
             <strong>הצהרת הלקוח:</strong><br>
-            בסימון תיבת האישור ובביצוע התשלום הריני מאשר/ת באופן מפורש, פעיל ומודע כי קראתי את התקנון במלואו, הבנתי את תוכנו, מסכים/ה לכל סעיפיו ללא יוצא מן הכלל, וכי הצהרה זו מהווה חתימה אלקטרונית מחייבת לכל דבר ועניין. <strong>אני מבין/ה ומאשר/ת במפורש כי הליווי האישי, הפגישות, ההתייעצויות והתמיכה האישית — תקפים לתקופה של 12 חודשים בלבד מיום ביצוע התשלום</strong>, וכי בתום תקופה זו הם יסתיימו אוטומטית ללא החזר וללא הארכה.
+            בסימון תיבת האישור ובביצוע התשלום הריני מאשר/ת באופן מפורש, פעיל ומודע כי קראתי את התקנון במלואו, הבנתי את תוכנו, מסכים/ה לכל סעיפיו ללא יוצא מן הכלל, וכי הצהרה זו מהווה חתימה אלקטרונית מחייבת לכל דבר ועניין.
         </p>
     </div>
 </div>
@@ -2107,10 +2102,200 @@
 
         <h3>יצירת קשר בנושא נגישות</h3>
         <p>אם נתקלתם בבעיית נגישות באתר, נשמח לשמוע ולטפל בכך. ניתן לפנות אלינו בדוא"ל ואנו נעשה כל מאמץ לתת מענה ולתקן את הבעיה בהקדם האפשרי.</p>
-
-        <p><strong>תאריך עדכון אחרון:</strong> אפריל 2025</p>
     </div>
 </div>
+
+<!-- PAYMENT MODAL — embedded Meshulam iframe -->
+<style>
+    .payment-modal-box {
+        background: #0a1628;
+        border: 1px solid rgba(22,199,96,0.25);
+        border-radius: 16px;
+        width: min(560px, 100%);
+        max-height: 92vh;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+    }
+    .payment-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(15,32,55,0.6);
+    }
+    .payment-modal-title {
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .payment-modal-title svg {
+        width: 18px;
+        height: 18px;
+        color: var(--green-bright);
+    }
+    .payment-modal-close {
+        background: transparent;
+        border: 0;
+        color: #fff;
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 6px;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+    .payment-modal-close:hover { opacity: 1; }
+    .payment-modal-iframe {
+        width: 100%;
+        height: 80vh;
+        border: 0;
+        background: #0a1628;
+        display: block;
+    }
+    @media (max-width: 600px) {
+        .payment-modal-iframe { height: 78vh; }
+    }
+</style>
+<div class="modal-overlay" id="paymentModal" onclick="if(event.target===this)closePaymentModal()">
+    <div class="payment-modal-box">
+        <div class="payment-modal-header">
+            <h3 class="payment-modal-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+                תשלום מאובטח — Stock Snipers
+            </h3>
+            <button class="payment-modal-close" onclick="closePaymentModal()" aria-label="סגירה">&times;</button>
+        </div>
+        <div id="paymentLoading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:75vh;background:#0a1628;color:#a8b8cc;gap:18px;">
+            <div style="width:48px;height:48px;border:3px solid rgba(22,199,96,0.2);border-top-color:var(--green-bright);border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+            <div style="font-size:14px;">טוען טופס תשלום מאובטח...</div>
+        </div>
+        <div id="paymentError" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:75vh;background:#0a1628;color:#fff;gap:16px;padding:30px;text-align:center;">
+            <div style="font-size:40px;">💳</div>
+            <div style="font-size:18px;font-weight:600;">נעביר אותך ישירות לתשלום</div>
+            <div style="font-size:14px;color:#a8b8cc;max-width:360px;line-height:1.6;">
+                הטופס לא נטען בדפדפן הזה. לחצי כאן ותועברי ישירות לעמוד תשלום מאובטח של CardCom.
+            </div>
+            <form action="https://learn.stock-snipers.com/api/payment/redirect" method="POST" style="margin:0;">
+                <button type="submit" style="background:var(--green-bright);color:#0a1628;border:0;padding:14px 40px;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">💳 מעבר לתשלום מאובטח</button>
+            </form>
+            <div style="margin-top:14px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.08);width:80%;max-width:360px;">
+                <div style="font-size:13px;color:#a8b8cc;margin-bottom:8px;">בעיה חוזרת? צרי קשר ישיר:</div>
+                <a href="https://wa.me/972525533022?text=שלום!%20נתקלתי%20בתקלה%20בעת%20התשלום%20באתר%20Stock%20Snipers" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    יצירת קשר ב-WhatsApp
+                </a>
+            </div>
+        </div>
+        <iframe id="paymentIframe" class="payment-modal-iframe" src="about:blank" title="תשלום מאובטח" allow="payment" style="display:none;"></iframe>
+    </div>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+<script>
+    const PAYMENT_API = 'https://learn.stock-snipers.com/api/payment/create';
+    async function openPaymentModal() {
+        const modal = document.getElementById('paymentModal');
+        const iframe = document.getElementById('paymentIframe');
+        const loading = document.getElementById('paymentLoading');
+        const errorBox = document.getElementById('paymentError');
+        // Reset
+        iframe.style.display = 'none';
+        iframe.src = 'about:blank';
+        errorBox.style.display = 'none';
+        loading.style.display = 'flex';
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        const ERROR_LOG_API = 'https://learn.stock-snipers.com/api/payment-error-log';
+        function reportPaymentError(stage, errorObj, extra = {}) {
+            try {
+                navigator.sendBeacon?.(ERROR_LOG_API, new Blob([JSON.stringify({
+                    stage: stage,
+                    error: errorObj?.name || String(errorObj),
+                    errorMessage: errorObj?.message || String(errorObj),
+                    apiUrl: PAYMENT_API,
+                    pageUrl: location.href,
+                    navigatorOnLine: navigator.onLine,
+                    ...extra,
+                })], { type: 'application/json' }));
+            } catch {}
+        }
+        // Retry helper — retries transient network errors and 5xx up to 3 times
+        // with 800ms/1600ms backoff. Silent to the customer.
+        async function fetchPaymentUrl() {
+            const backoffs = [0, 800, 1600];
+            let lastErr;
+            for (let attempt = 0; attempt < backoffs.length; attempt++) {
+                if (backoffs[attempt]) await new Promise(r => setTimeout(r, backoffs[attempt]));
+                try {
+                    const startedAt = Date.now();
+                    const res = await fetch(PAYMENT_API, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({}),
+                    });
+                    if (!res.ok) {
+                        // 4xx = client-side issue, don't retry; 5xx = server, do retry
+                        const body = await res.text().catch(() => '');
+                        console.warn('[payment] HTTP', res.status, 'attempt', attempt + 1);
+                        if (res.status >= 400 && res.status < 500) {
+                            reportPaymentError('http-4xx', new Error('HTTP ' + res.status), { httpStatus: res.status, responseBody: body.slice(0, 500) });
+                            throw new Error('HTTP ' + res.status);
+                        }
+                        lastErr = new Error('HTTP ' + res.status);
+                        continue; // retry 5xx
+                    }
+                    const data = await res.json();
+                    console.log('[payment] API responded in', Date.now() - startedAt, 'ms (attempt', attempt + 1, ')');
+                    if (!data.ok || !data.url) {
+                        reportPaymentError('api-error', new Error(data.detail || data.error || 'no_url'), { responseBody: JSON.stringify(data).slice(0, 500), attempt: attempt + 1 });
+                        throw new Error(data.detail || data.error || 'no_url');
+                    }
+                    return data;
+                } catch (networkErr) {
+                    // TypeError from fetch itself = network problem — retryable
+                    console.warn('[payment] fetch attempt', attempt + 1, 'failed:', networkErr.message);
+                    lastErr = networkErr;
+                    if (attempt === backoffs.length - 1) {
+                        reportPaymentError('fetch-network', networkErr, { attempts: attempt + 1 });
+                    }
+                }
+            }
+            throw lastErr || new Error('unknown');
+        }
+
+        try {
+            const data = await fetchPaymentUrl();
+            iframe.onload = () => {
+                loading.style.display = 'none';
+                iframe.style.display = 'block';
+            };
+            iframe.src = data.url;
+        } catch (e) {
+            console.error('[payment] failure after retries:', e);
+            loading.style.display = 'none';
+            errorBox.style.display = 'flex';
+        }
+    }
+    function closePaymentModal() {
+        const modal = document.getElementById('paymentModal');
+        const iframe = document.getElementById('paymentIframe');
+        modal.classList.remove('active');
+        iframe.src = 'about:blank';
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('paymentModal').classList.contains('active')) {
+            closePaymentModal();
+        }
+    });
+</script>
 
 <script>
     // ----- Terms gate: enable payment button only after explicit consent ----

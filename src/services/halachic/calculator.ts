@@ -65,11 +65,13 @@ export function calculateVesetDates(input: CalculationInput): CalculationResult 
     });
   }
 
-  // Hefsek Taharah — 5th day from start
-  const hefsekTaharahDate = addDays(startDate, 4);
+  // Hefsek Taharah — only set when user has recorded it via the button
+  const hefsekTaharahDate: string | undefined = input.hefsekDate;
 
-  // Mikveh night — 7 clean days after hefsek = day 12 from start
-  const mikvehNight = addDays(startDate, 11);
+  // Mikveh night — 7 clean days after hefsek (only when hefsek is recorded)
+  const mikvehNight: string | undefined = hefsekTaharahDate
+    ? addDays(hefsekTaharahDate, 7)
+    : undefined;
 
   // Proactive alerts
   const alerts: ProactiveAlert[] = [];
@@ -82,17 +84,21 @@ export function calculateVesetDates(input: CalculationInput): CalculationResult 
     });
   }
 
-  alerts.push({
-    type: 'hefsek_taharah',
-    triggerDate: hefsekTaharahDate,
-    message: 'Today is the day for Hefsek Taharah',
-  });
+  if (hefsekTaharahDate) {
+    alerts.push({
+      type: 'hefsek_taharah',
+      triggerDate: hefsekTaharahDate,
+      message: 'Today is the day for Hefsek Taharah',
+    });
+  }
 
-  alerts.push({
-    type: 'mikveh_night',
-    triggerDate: mikvehNight,
-    message: 'Tonight is Mikveh night',
-  });
+  if (mikvehNight) {
+    alerts.push({
+      type: 'mikveh_night',
+      triggerDate: mikvehNight,
+      message: 'Tonight is Mikveh night',
+    });
+  }
 
   return {
     vesetDates,

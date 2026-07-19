@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bduazizvarumyrprphwq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkdWF6aXp2YXJ1bXlycHJwaHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NDM4MDgsImV4cCI6MjA5MTMxOTgwOH0.y5F5vcrEF2MysLSq8_dnWxWkupnYHF0-SDtgS-4APOs"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
