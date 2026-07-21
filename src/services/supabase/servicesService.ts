@@ -74,9 +74,13 @@ export async function searchProviders(query: string): Promise<ServiceProvider[]>
   const q = query.trim();
 
   // Single query: join with provider_services to ensure at least one active service exists
+  // Explicit column list — never select('*') here: service_providers also holds
+  // invoice-integration secrets that must not reach the client.
   let dbQuery = supabase
     .from('service_providers')
-    .select('*, provider_services!inner(id)')
+    .select(
+      'id, name, category, specialty, city, address, bio, profile_image_path, latitude, longitude, rating, phone, portfolio_paths, is_active, provider_services!inner(id)',
+    )
     .eq('is_active', true)
     .eq('provider_services.is_active', true)
     .not('bio', 'is', null)
@@ -109,9 +113,12 @@ export async function fetchNearbyProviders(
   radiusKm = 10,
   category?: 'nail' | 'gel' | 'beauty',
 ): Promise<ServiceProvider[]> {
+  // Explicit column list — see note in searchProviders (no secrets to the client).
   let query = supabase
     .from('service_providers')
-    .select('*')
+    .select(
+      'id, name, category, specialty, city, address, bio, profile_image_path, latitude, longitude, rating, phone, portfolio_paths, is_active',
+    )
     .eq('is_active', true);
 
   if (category) query = query.eq('category', category);
