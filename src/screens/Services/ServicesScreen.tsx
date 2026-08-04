@@ -480,8 +480,11 @@ export default function ServicesScreen() {
     if (providers.length === 0) setIsLoading(true);
     const safety = setTimeout(() => setIsLoading(false), 7000);
     try {
-      const combined = [q.trim(), cat].filter(Boolean).join(' ');
-      const results = await searchProviders(combined);
+      // Search the typed text if there is any, otherwise the selected category
+      // (its label is a service type). They must NOT be concatenated — a joined
+      // string like "בת ים גבות" matches neither a city nor a service.
+      const term = q.trim() || (cat ?? '');
+      const results = await searchProviders(term);
       const withDistance = results.map((p) => ({
         ...p,
         distanceKm: loc && p.latitude !== 0 ? haversineKm(loc.lat, loc.lon, p.latitude, p.longitude) : undefined,

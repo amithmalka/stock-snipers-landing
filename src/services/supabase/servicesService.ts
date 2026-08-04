@@ -65,42 +65,73 @@ function rowToProvider(r: ProviderRow, userLat?: number, userLon?: number): Serv
   };
 }
 
-/**
- * Search providers by free text (specialty + city + name).
- * e.g. query = "ציפורניים ירושלים"
- * Uses a single query with inner join to avoid double round-trip.
- */
-export async function searchProviders(query: string): Promise<ServiceProvider[]> {
-  const q = query.trim();
+// Explicit column list — never select('*') here: service_providers also holds
+// invoice-integration secrets that must not reach the client.
+const PROVIDER_COLS =
+  'id, name, category, specialty, city, address, bio, profile_image_path, latitude, longitude, rating, phone, portfolio_paths, is_active';
 
-  // Single query: join with provider_services to ensure at least one active service exists
-  // Explicit column list — never select('*') here: service_providers also holds
-  // invoice-integration secrets that must not reach the client.
-  let dbQuery = supabase
+// A visible business: active, has a bio, at least one photo, and ≥1 active
+// service. `select` must include provider_services!inner(...) so the last two
+// filters apply. (Filters chain off .select(), not .from().)
+function visibleProviders(select: string) {
+  return supabase
     .from('service_providers')
-    .select(
-      'id, name, category, specialty, city, address, bio, profile_image_path, latitude, longitude, rating, phone, portfolio_paths, is_active, provider_services!inner(id)',
-    )
+    .select(select)
     .eq('is_active', true)
     .eq('provider_services.is_active', true)
     .not('bio', 'is', null)
     .neq('bio', '')
     .not('portfolio_paths', 'eq', '{}');
+}
 
-  if (q) {
-    dbQuery = dbQuery.or(
-      `name.ilike.%${q}%,specialty.ilike.%${q}%,city.ilike.%${q}%,category.ilike.%${q}%`,
+/**
+ * Search providers by free text.
+ *
+ * Matches the business (name / specialty / city / category) AND the names of the
+ * services it offers — so "לק", "גבות" or "פדיקור" find a salon even though the
+ * word only appears in its service menu, not in the business fields. Commas are
+ * stripped from the term because PostgREST uses them as an .or() separator.
+ */
+export async function searchProviders(query: string): Promise<ServiceProvider[]> {
+  const q = query.trim().replace(/,/g, ' ');
+  const { withTimeout } = await import('./session');
+
+  // No term → every visible business.
+  if (!q) {
+    const { data, error } = await withTimeout(
+      visibleProviders(`${PROVIDER_COLS}, provider_services!inner(id)`)
+        .limit(50)
+        .then((r) => r),
+      6000,
+      'searchProviders',
     );
+    if (error) throw error;
+    return (data as unknown as ProviderRow[]).map((r) => rowToProvider(r));
   }
 
-  const { withTimeout } = await import('./session');
-  const { data, error } = await withTimeout(
-    dbQuery.limit(50).then((r) => r),
+  // Two matches in parallel, then merge:
+  //  A) the business fields, B) the name of any service the business offers.
+  const byBusiness = visibleProviders(`${PROVIDER_COLS}, provider_services!inner(id)`)
+    .or(`name.ilike.%${q}%,specialty.ilike.%${q}%,city.ilike.%${q}%,category.ilike.%${q}%`)
+    .limit(50);
+
+  const byService = visibleProviders(`${PROVIDER_COLS}, provider_services!inner(id, name)`)
+    .ilike('provider_services.name', `%${q}%`)
+    .limit(50);
+
+  const [a, b] = await withTimeout(
+    Promise.all([byBusiness.then((r) => r), byService.then((r) => r)]),
     6000,
     'searchProviders',
   );
-  if (error) throw error;
-  return (data as ProviderRow[]).map((r) => rowToProvider(r));
+  if (a.error) throw a.error;
+  if (b.error) throw b.error;
+
+  const merged = new Map<string, ProviderRow>();
+  for (const row of [...(a.data ?? []), ...(b.data ?? [])] as unknown as ProviderRow[]) {
+    merged.set(row.id, row);
+  }
+  return Array.from(merged.values()).map((r) => rowToProvider(r));
 }
 
 /**
