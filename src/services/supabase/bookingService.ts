@@ -207,8 +207,23 @@ async function fetchSlotsForDateInternal(providerId: string, date: string, durat
   }
   allSlots.sort((a, b) => a.start.localeCompare(b.start));
 
+  // When booking for today, drop times that have already passed — otherwise a
+  // 9:00 slot is still offered at 15:00. Compared in the device's local time,
+  // the same basis the "HH:MM" slot strings and the YYYY-MM-DD date use.
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const visibleSlots =
+    date === todayStr
+      ? allSlots.filter((s) => toMinutes(s.start) > now.getHours() * 60 + now.getMinutes())
+      : allSlots;
+
   return {
-    slots: allSlots.map((s) => ({ ...s, booked: bookedTimes.has(s.start) })),
+    slots: visibleSlots.map((s) => ({ ...s, booked: bookedTimes.has(s.start) })),
     reason: 'ok',
   };
 }
