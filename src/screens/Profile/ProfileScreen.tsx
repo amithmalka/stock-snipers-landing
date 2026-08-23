@@ -126,6 +126,16 @@ export default function ProfileScreen() {
     setNotifBusy(false);
     if (status === 'denied') {
       Alert.alert('', t.notifDenied);
+    } else if (status === 'unsupported') {
+      // Most common on iPhone: Safari only allows web push once the site is
+      // installed to the Home Screen. Tell the user how, instead of failing
+      // silently (previously nothing happened on tap).
+      const iOS = typeof navigator !== 'undefined' && /iP(hone|ad|od)/.test(navigator.userAgent);
+      const standalone =
+        typeof window !== 'undefined' &&
+        ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+          (window.navigator as unknown as { standalone?: boolean }).standalone === true);
+      Alert.alert('', iOS && !standalone ? t.notifIosInstall : t.notifUnsupported);
     } else if (status === 'misconfigured' || status === 'error') {
       Alert.alert('', t.error);
     }
