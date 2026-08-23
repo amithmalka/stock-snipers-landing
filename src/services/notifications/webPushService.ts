@@ -35,8 +35,16 @@ export async function subscribeToWebPush(userId: string): Promise<WebPushStatus>
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return 'denied';
 
-    // SW ready can hang if SW failed to register — timeout in 5s
-    const reg = await withTimeout(navigator.serviceWorker.ready, 5000, 'sw-ready');
+    // Register the SW ourselves rather than only awaiting serviceWorker.ready.
+    // ready never resolves if nothing registered it (and relying on the HTML's
+    // injected registration is a timing gamble), which made subscribe silently
+    // time out. register() resolves to a usable registration immediately.
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+    } catch {
+      /* already registered, or blocked — fall through to ready */
+    }
+    const reg = await withTimeout(navigator.serviceWorker.ready, 8000, 'sw-ready');
     let sub = await withTimeout(reg.pushManager.getSubscription(), 3000, 'get-sub');
     if (!sub) {
       sub = await withTimeout(
