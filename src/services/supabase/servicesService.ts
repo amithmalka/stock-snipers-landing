@@ -84,13 +84,40 @@ function visibleProviders(select: string) {
     .not('portfolio_paths', 'eq', '{}');
 }
 
+// Everyday words don't match how salons actually name their services: a client
+// searches "ציפורניים" but the service is listed as "לק ג׳ל". Each group below
+// is mutually interchangeable — searching any word in a group matches a service
+// named with any other word in it. Written lowercase; matching is case-folded.
+const SYNONYM_GROUPS: string[][] = [
+  ['ציפורניים', 'ציפורנים', 'לק', 'לק ג', "ג'ל", 'ג׳ל', 'גל', 'מניקור', 'בניה', 'בנייה', 'טיפס', 'נייל', 'nails', 'nail', 'gel', 'manicure'],
+  ['פדיקור', 'רגליים', 'pedicure'],
+  ['גבות', 'גבה', 'שעווה', 'חוט', 'שזירה', 'brows', 'eyebrow'],
+  ['ריסים', 'ריס', 'הרמת ריסים', 'תוספות ריסים', 'לashes', 'lashes'],
+  ['איפור', 'מייקאפ', 'makeup'],
+  ['שיער', 'תספורת', 'החלקה', 'צבע שיער', 'פן', 'hair'],
+  ['פנים', 'טיפול פנים', 'קוסמטיקה', 'facial'],
+  ['עיסוי', 'מסאז', 'massage'],
+];
+
+// Expand a query into all interchangeable terms to look for in service names.
+function expandServiceTerms(q: string): string[] {
+  const lower = q.toLowerCase();
+  const terms = new Set<string>([q]);
+  for (const group of SYNONYM_GROUPS) {
+    if (group.some((w) => lower.includes(w) || w.includes(lower))) {
+      group.forEach((w) => terms.add(w));
+    }
+  }
+  return Array.from(terms);
+}
+
 /**
  * Search providers by free text.
  *
  * Matches the business (name / specialty / city / category) AND the names of the
- * services it offers — so "לק", "גבות" or "פדיקור" find a salon even though the
- * word only appears in its service menu, not in the business fields. Commas are
- * stripped from the term because PostgREST uses them as an .or() separator.
+ * services it offers — with a synonym map so "ציפורניים" finds a salon whose
+ * service is named "לק ג׳ל". Commas are stripped because PostgREST uses them as
+ * an .or() separator.
  */
 export async function searchProviders(query: string): Promise<ServiceProvider[]> {
   const q = query.trim().replace(/,/g, ' ');
@@ -115,8 +142,12 @@ export async function searchProviders(query: string): Promise<ServiceProvider[]>
     .or(`name.ilike.%${q}%,specialty.ilike.%${q}%,city.ilike.%${q}%,category.ilike.%${q}%`)
     .limit(50);
 
+  // Match a service whose name contains the query OR any of its synonyms.
+  const serviceOr = expandServiceTerms(q)
+    .map((term) => `name.ilike.%${term.replace(/,/g, ' ')}%`)
+    .join(',');
   const byService = visibleProviders(`${PROVIDER_COLS}, provider_services!inner(id, name)`)
-    .ilike('provider_services.name', `%${q}%`)
+    .or(serviceOr, { referencedTable: 'provider_services' })
     .limit(50);
 
   const [a, b] = await withTimeout(
