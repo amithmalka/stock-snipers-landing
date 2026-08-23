@@ -34,7 +34,7 @@ import {
   schedulePrayerReminder,
   cancelPrayerReminder,
 } from '../../services/notifications/notificationsService';
-import { subscribeToWebPush, getWebPushPermission } from '../../services/notifications/webPushService';
+import { subscribeToWebPush, getWebPushPermission, hasWebPushSubscription, unsubscribeFromWebPush } from '../../services/notifications/webPushService';
 
 export default function ProfileScreen() {
   const { user, isDemoMode, signOut, updateProfile } = useAuth();
@@ -114,15 +114,27 @@ export default function ProfileScreen() {
     }
   }
 
+  const [subscribed, setSubscribed] = useState(false);
+
   useEffect(() => {
     setNotifPerm(getWebPushPermission());
+    hasWebPushSubscription().then(setSubscribed);
   }, []);
+
+  async function handleDisableNotifications() {
+    if (!user?.id) return;
+    setNotifBusy(true);
+    await unsubscribeFromWebPush(user.id);
+    setSubscribed(false);
+    setNotifBusy(false);
+  }
 
   async function handleEnableNotifications() {
     if (!user?.id) return;
     setNotifBusy(true);
     const status = await subscribeToWebPush(user.id);
     setNotifPerm(getWebPushPermission());
+    setSubscribed(status === 'subscribed');
     setNotifBusy(false);
     if (status === 'denied') {
       Alert.alert('', t.notifDenied);
@@ -324,10 +336,24 @@ export default function ProfileScreen() {
           <>
             <Text style={styles.sectionTitle}>{t.notifications}</Text>
             <View style={styles.card}>
-              {notifPerm === 'granted' ? (
+              {subscribed ? (
+                // Truly subscribed (there is a live push subscription), not just
+                // permission granted — with a way to turn it back off.
                 <View style={styles.notifRow}>
                   <Text style={styles.notifEnabled}>{t.notifEnabled}</Text>
                   <Text style={styles.notifDesc}>{t.notifEnableDesc}</Text>
+                  <TouchableOpacity
+                    style={styles.notifDisableBtn}
+                    onPress={handleDisableNotifications}
+                    disabled={notifBusy}
+                    activeOpacity={0.8}
+                  >
+                    {notifBusy ? (
+                      <ActivityIndicator color={colors.primary.rose} />
+                    ) : (
+                      <Text style={styles.notifDisableText}>{t.disableNotifications}</Text>
+                    )}
+                  </TouchableOpacity>
                 </View>
               ) : notifPerm === 'denied' ? (
                 <View style={styles.notifRow}>
@@ -590,6 +616,8 @@ const styles = StyleSheet.create({
   notifRow: { padding: spacing.md, gap: spacing.xs },
   notifEnabled: { fontSize: typography.size.md, fontWeight: '700', color: colors.primary.gold, textAlign: 'right' },
   notifDesc: { fontSize: typography.size.xs, color: colors.neutral.textMuted, textAlign: 'right' },
+  notifDisableBtn: { marginTop: spacing.sm, alignSelf: 'flex-start', paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.primary.rose },
+  notifDisableText: { fontSize: typography.size.sm, fontWeight: '600', color: colors.primary.rose },
   notifBlocked: { fontSize: typography.size.sm, color: '#EF4444', textAlign: 'right' },
   notifBtn: {
     padding: spacing.md, alignItems: 'center', backgroundColor: colors.primary.gold,

@@ -79,3 +79,38 @@ export function getWebPushPermission(): NotificationPermission | 'unsupported' {
   if (typeof Notification === 'undefined') return 'unsupported';
   return Notification.permission;
 }
+
+/**
+ * Whether the device actually has a live push subscription right now — the real
+ * signal, unlike Notification.permission which can read 'granted' even when the
+ * subscription never saved. Used to decide Enable vs Disable in the UI.
+ */
+export async function hasWebPushSubscription(): Promise<boolean> {
+  if (Platform.OS !== 'web') return false;
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return false;
+  }
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return false;
+    return !!(await reg.pushManager.getSubscription());
+  } catch {
+    return false;
+  }
+}
+
+/** Turn notifications off: drop the browser subscription and the stored row. */
+export async function unsubscribeFromWebPush(userId: string): Promise<void> {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    if (sub) await sub.unsubscribe();
+  } catch {
+    /* ignore — we still clear the server row below */
+  }
+  try {
+    await supabase.from('user_push_subscriptions').delete().eq('user_id', userId);
+  } catch {
+    /* ignore */
+  }
+}
