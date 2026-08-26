@@ -298,11 +298,20 @@ export default function CalendarScreen({
       return updated;
     });
     scheduleCleanDayReminders(dateIso, halachicProfile).catch(() => {});
-    // Persist hefsek to Supabase
+    setSaveError(null);
+    // Persist hefsek to Supabase — surface failures instead of swallowing them,
+    // otherwise the UI shows the hefsek as set while the server never gets it
+    // (so no clean-day reminders are ever sent).
     if (isSupabaseConfigured && userId !== 'demo') {
       setCycles((current) => {
         const latest = current[current.length - 1];
-        if (latest) saveHefsek(latest.id, dateIso).catch(() => {});
+        if (latest) {
+          saveHefsek(latest.id, dateIso).catch((e: any) => {
+            console.error('[Calendar] saveHefsek (date) failed:', e);
+            const msg = e?.message || e?.details || e?.hint || (typeof e === 'string' ? e : JSON.stringify(e));
+            setSaveError('שמירת הפסק טהרה נכשלה: ' + msg);
+          });
+        }
         return current;
       });
     }

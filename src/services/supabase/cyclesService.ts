@@ -86,26 +86,33 @@ export async function saveCycle(
   entry: CycleEntry,
   result: CalculationResult,
 ): Promise<void> {
-  const { ensureSession, withLockRetry } = await import('./session');
+  const { ensureSession, withLockRetry, withTimeout } = await import('./session');
   // CRITICAL: use the user id from the CURRENT authenticated session, NOT
   // the userId passed in from React state. RLS policies check auth.uid(),
   // so they must match the session's user. Passing a stale id from React
   // state was causing all writes to be silently blocked.
   const authUserId = await withLockRetry(() => ensureSession());
 
-  // Backup latest cycle to user_metadata (RLS-free)
+  // Backup latest cycle to user_metadata (RLS-free). auth.updateUser goes
+  // through the Web Locks API, which can hang indefinitely inside an iOS PWA —
+  // and because it was awaited, a hang here blocked the actual cycle insert
+  // below. Time-box it so the real save always proceeds; the backup is optional.
   try {
-    await supabase.auth.updateUser({
-      data: {
-        last_cycle: {
-          id: entry.id,
-          start_date: entry.startDate,
-          hebrew_date: entry.hebrewDate,
-          onah: entry.onah,
-          hefsek_date: entry.hefsekDate ?? null,
+    await withTimeout(
+      supabase.auth.updateUser({
+        data: {
+          last_cycle: {
+            id: entry.id,
+            start_date: entry.startDate,
+            hebrew_date: entry.hebrewDate,
+            onah: entry.onah,
+            hefsek_date: entry.hefsekDate ?? null,
+          },
         },
-      },
-    });
+      }),
+      4000,
+      'updateUser-backup',
+    );
   } catch {}
 
   // Cycles table — use authUserId, guaranteed to match auth.uid()
@@ -159,17 +166,22 @@ export async function fetchVesetDates(userId: string): Promise<VesetDate[]> {
 
 /** Save hefsek date for the latest cycle. */
 export async function saveHefsek(cycleId: string, hefsekDate: string): Promise<void> {
-  const { ensureSession, withLockRetry } = await import('./session');
+  const { ensureSession, withLockRetry, withTimeout } = await import('./session');
   await withLockRetry(() => ensureSession());
 
-  // Backup to user_metadata
+  // Backup to user_metadata — time-boxed so a Web Locks hang in the iOS PWA
+  // can't block the cycles.update below (see note in saveCycle).
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await withTimeout(supabase.auth.getUser(), 4000, 'getUser-backup');
     const lastCycle = (user?.user_metadata as { last_cycle?: Record<string, unknown> } | null)?.last_cycle;
     if (lastCycle && lastCycle.id === cycleId) {
-      await supabase.auth.updateUser({
-        data: { last_cycle: { ...lastCycle, hefsek_date: hefsekDate } },
-      });
+      await withTimeout(
+        supabase.auth.updateUser({
+          data: { last_cycle: { ...lastCycle, hefsek_date: hefsekDate } },
+        }),
+        4000,
+        'updateUser-backup',
+      );
     }
   } catch {}
 
